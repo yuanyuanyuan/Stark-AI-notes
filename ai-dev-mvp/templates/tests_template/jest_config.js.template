@@ -1,0 +1,6 @@
+// Jest 配置文件模板
+
+module.exports = {
+  testEnvironment: 'jsdom', // 使用 jsdom 模拟浏览器环境
+  // 其他 Jest 配置 ...
+}; 

@@ -1,0 +1,10 @@
+/* 页面样式模板 */
+
+.container {
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+h1 {
+  color: #333;
+}
