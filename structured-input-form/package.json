@@ -1,0 +1,43 @@
+{
+  "name": "structured-input-form",
+  "displayName": "结构化输入表单",
+  "description": "通过表单指导用户按照预定义格式输入内容",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "structured-input-form.showInputForm",
+        "title": "显示结构化输入表单"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "structured-input-form.showInputForm",
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run lint",
+    "lint": "eslint .",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.0",
+    "@types/vscode": "^1.60.0",
+    "eslint": "^8.0.0"
+  }
+}
