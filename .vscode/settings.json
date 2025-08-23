@@ -1,5 +1,8 @@
 {
     "marscode.codeCompletionPro": {
         "enableCodeCompletionPro": false
+    },
+    "editor.codeActionsOnSave": {
+        
     }
 }
