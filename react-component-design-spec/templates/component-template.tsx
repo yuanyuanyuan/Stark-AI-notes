@@ -17,7 +17,11 @@ import React, {
   useEffect, 
   useCallback, 
   useMemo, 
-  useRef 
+  useRef,
+  useId,
+  useTransition,
+  useDeferredValue,
+  useSyncExternalStore
 } from 'react';
 import { cn } from '@/lib/utils'; // 工具函数，根据项目调整路径
 
@@ -70,6 +74,24 @@ const COMPONENT_DEFAULTS = {
   loading: false,
 } as const;
 
+// ==================== React 18 特性 ====================
+
+/**
+ * 使用 useTransition 处理非紧急状态更新
+ */
+const useOptimizedState = <T>(initialState: T) => {
+  const [isPending, startTransition] = useTransition();
+  const [state, setState] = useState<T>(initialState);
+  
+  const setOptimizedState = useCallback((update: T | ((prev: T) => T)) => {
+    startTransition(() => {
+      setState(update);
+    });
+  }, []);
+  
+  return { state, setState: setOptimizedState, isPending };
+};
+
 // ==================== 主组件 ====================
 
 /**
@@ -90,13 +112,26 @@ export const [ComponentName]: React.FC<[ComponentName]Props> = React.memo(({
   onClick,
   ...restProps
 }) => {
-  // ==================== 状态管理 ====================
+  // ==================== React 18 状态管理 ====================
   
-  const [state, setState] = useState<[ComponentName]State>({
+  // 生成唯一ID，用于可访问性
+  const componentId = useId();
+  
+  // 使用优化的状态管理
+  const { state, setState, isPending } = useOptimizedState<[ComponentName]State>({
     isActive: false,
     isFocused: false,
     internalValue: '',
   });
+  
+  // 使用 useDeferredValue 优化输入处理
+  const deferredInternalValue = useDeferredValue(state.internalValue);
+  
+  // 处理延迟值的计算
+  const filteredResults = useMemo(() => {
+    // 这里可以放置基于 deferredInternalValue 的计算
+    return performExpensiveCalculation(deferredInternalValue);
+  }, [deferredInternalValue]);
   
   const ref = useRef<HTMLDivElement>(null);
   
@@ -141,25 +176,34 @@ export const [ComponentName]: React.FC<[ComponentName]Props> = React.memo(({
     return !disabled && !loading;
   }, [disabled, loading]);
   
-  // ==================== 事件处理 ====================
+  /**
+   * 模拟昂贵的计算函数
+   */
+  const performExpensiveCalculation = useCallback((value: string) => {
+    // 这里放置实际的计算逻辑
+    console.log('Performing expensive calculation with:', value);
+    return value.toUpperCase(); // 示例返回值
+  }, []);
+  
+  // ==================== React 18 事件处理 ====================
   
   /**
-   * 处理点击事件
+   * 处理点击事件 - 使用 useTransition 优化
    */
   const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     if (!isInteractive) return;
     
-    // 更新状态
+    // 使用 useTransition 处理非紧急状态更新
     setState(prev => ({ ...prev, isActive: true }));
     
     // 调用外部回调
     onClick?.(event);
     
-    // 重置激活状态
-    setTimeout(() => {
+    // 使用 requestAnimationFrame 优化动画
+    requestAnimationFrame(() => {
       setState(prev => ({ ...prev, isActive: false }));
-    }, 200);
-  }, [isInteractive, onClick]);
+    });
+  }, [isInteractive, onClick, setState]);
   
   /**
    * 处理焦点事件

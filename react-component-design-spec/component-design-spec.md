@@ -2,7 +2,13 @@
 
 ## 📋 概述
 
-本文档提供了React组件的标准化设计规范，旨在确保组件的高质量、可维护性和一致性。遵循此规范可以快速开发出符合最佳实践的React组件。
+本文档提供了基于 **React 18.3.1** 的组件标准化设计规范，旨在确保组件的高质量、可维护性和一致性。遵循此规范可以快速开发出符合最佳实践的React组件。
+
+### 🎯 版本信息
+- **React版本**: 18.3.1 (稳定版)
+- **TypeScript**: 5.x
+- **Node.js**: >= 16.0.0
+- **构建工具**: Vite 4.x / Webpack 5.x
 
 ## 🎯 设计原则
 
@@ -735,6 +741,354 @@ const useFetch = <T>(url: string) => {
   return { data, loading, error, refetch: () => {} };
 };
 ```
+
+## 🚀 React 18 最佳实践
+
+### 并发特性 (Concurrent Features)
+
+#### 1. 使用 useTransition 处理非紧急更新
+```tsx
+// ✅ 正确：使用 useTransition 优化大数据渲染
+const [isPending, startTransition] = useTransition();
+const [filter, setFilter] = useState('');
+
+const filteredList = useMemo(() => {
+  if (!filter) return largeList;
+  
+  return largeList.filter(item => 
+    item.name.toLowerCase().includes(filter.toLowerCase())
+  );
+}, [largeList, filter]);
+
+const handleFilterChange = (value: string) => {
+  // 将过滤操作标记为非紧急更新
+  startTransition(() => {
+    setFilter(value);
+  });
+};
+
+// 在UI中显示过渡状态
+return (
+  <div>
+    <input 
+      type="text" 
+      value={filter}
+      onChange={(e) => handleFilterChange(e.target.value)}
+      placeholder="搜索..."
+    />
+    {isPending && <span className="loading">正在筛选...</span>}
+    <List items={filteredList} />
+  </div>
+);
+```
+
+#### 2. 使用 useDeferredValue 延迟非紧急值
+```tsx
+// ✅ 正确：延迟搜索输入以提升性能
+const [inputValue, setInputValue] = useState('');
+const deferredValue = useDeferredValue(inputValue);
+
+const searchResults = useMemo(() => {
+  return performSearch(deferredValue);
+}, [deferredValue]);
+
+return (
+  <div>
+    <input 
+      type="text" 
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+    />
+    <SearchResults results={searchResults} />
+  </div>
+);
+```
+
+### Suspense 和数据获取
+
+#### 1. 使用 Suspense 组件
+```tsx
+// ✅ 正确：使用 Suspense 包装异步组件
+const UserProfile = ({ userId }: { userId: string }) => {
+  return (
+    <Suspense fallback={<UserProfileSkeleton />}>
+      <UserProfileContent userId={userId} />
+    </Suspense>
+  );
+};
+
+// 异步组件
+const UserProfileContent = async ({ userId }: { userId: string }) => {
+  const user = await fetchUser(userId);
+  const posts = await fetchUserPosts(userId);
+  
+  return (
+    <div>
+      <UserInfo user={user} />
+      <UserPosts posts={posts} />
+    </div>
+  );
+};
+```
+
+#### 2. 创建 Suspense 友好的数据获取
+```tsx
+// ✅ 正确：创建支持 Suspense 的数据获取 Hook
+const useSuspenseFetch = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [promise, setPromise] = useState<Promise<T> | null>(null);
+  
+  if (!promise) {
+    const fetchPromise = fetch(url).then(res => res.json());
+    setPromise(fetchPromise);
+    throw fetchPromise; // 抛出 Promise 让 Suspense 捕获
+  }
+  
+  promise.then(data => {
+    setData(data);
+  });
+  
+  if (!data) {
+    throw promise; // 继续抛出直到数据准备好
+  }
+  
+  return data;
+};
+```
+
+### Strict Mode 最佳实践
+
+#### 1. 双重渲染兼容
+```tsx
+// ✅ 正确：确保组件在 Strict Mode 下正常工作
+const MyComponent = () => {
+  const [count, setCount] = useState(0);
+  const [data, setData] = useState(null);
+  
+  // 使用 useEffect 清理副作用
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await apiCall();
+      setData(result);
+    };
+    
+    fetchData();
+    
+    // 清理函数
+    return () => {
+      // 清理订阅、定时器等
+    };
+  }, []);
+  
+  // 避免在渲染期间产生副作用
+  const handleClick = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={handleClick}>Increment</button>
+      {data && <DataDisplay data={data} />}
+    </div>
+  );
+};
+```
+
+#### 2. 组件卸载处理
+```tsx
+// ✅ 正确：正确处理组件卸载
+const DataFetcher = ({ url }: { url: string }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const abortController = useRef<AbortController | null>(null);
+  
+  useEffect(() => {
+    abortController.current = new AbortController();
+    
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url, {
+          signal: abortController.current.signal
+        });
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Fetch error:', error);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+    
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort();
+      }
+    };
+  }, [url]);
+  
+  if (loading) return <Spinner />;
+  if (!data) return <ErrorDisplay />;
+  
+  return <DataView data={data} />;
+};
+```
+
+### 批量更新和自动批处理
+
+#### 1. 利用 React 18 的自动批处理
+```tsx
+// ✅ 正确：React 18 会自动批处理状态更新
+const FormComponent = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: ''
+  });
+  
+  // 这些更新会被自动批处理
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  const handleSubmit = () => {
+    // 提交逻辑
+    console.log('Form submitted:', formData);
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={formData.name}
+        onChange={(e) => handleChange('name', e.target.value)}
+      />
+      <input
+        value={formData.email}
+        onChange={(e) => handleChange('email', e.target.value)}
+      />
+      <input
+        value={formData.phone}
+        onChange={(e) => handleChange('phone', e.target.value)}
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+### 新的 Hooks 最佳实践
+
+#### 1. useId 生成唯一ID
+```tsx
+// ✅ 正确：使用 useId 生成可访问性ID
+const FormField = ({ label, children }: { label: string; children: React.ReactNode }) => {
+  const id = useId();
+  
+  return (
+    <div className="form-field">
+      <label htmlFor={id}>{label}</label>
+      {React.cloneElement(children as React.ReactElement, { id })}
+    </div>
+  );
+};
+
+// 使用示例
+const LoginForm = () => {
+  return (
+    <form>
+      <FormField label="Username">
+        <input type="text" />
+      </FormField>
+      <FormField label="Password">
+        <input type="password" />
+      </FormField>
+    </form>
+  );
+};
+```
+
+#### 2. useSyncExternalStore 订阅外部状态
+```tsx
+// ✅ 正确：使用 useSyncExternalStore 订阅外部状态
+const useExternalStore = <T,>(
+  store: { 
+    getSnapshot: () => T; 
+    subscribe: (callback: () => void) => () => void 
+  }
+) => {
+  return useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot
+  );
+};
+
+// 使用示例：订阅 Redux store
+const useReduxStore = <T>(selector: (state: RootState) => T) => {
+  const store = useReduxStoreContext();
+  
+  return useSyncExternalStore(
+    store.subscribe,
+    () => selector(store.getState()),
+    () => selector(store.getInitialState())
+  );
+};
+```
+
+### 客户端和服务端渲染兼容
+
+#### 1. 水合错误处理
+```tsx
+// ✅ 正确：处理水合不匹配问题
+const HydrationSafeComponent = () => {
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
+  
+  return <ClientOnlyContent />;
+};
+```
+
+#### 2. 使用 useEffect 处理客户端特定逻辑
+```tsx
+// ✅ 正确：将客户端特定逻辑放在 useEffect 中
+const ClientSideFeature = () => {
+  const [browserInfo, setBrowserInfo] = useState(null);
+  
+  useEffect(() => {
+    // 只在客户端执行
+    setBrowserInfo({
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      platform: navigator.platform
+    });
+  }, []);
+  
+  if (!browserInfo) {
+    return <div>Detecting browser...</div>;
+  }
+  
+  return (
+    <div>
+      <p>Browser: {browserInfo.userAgent}</p>
+      <p>Language: {browserInfo.language}</p>
+      <p>Platform: {browserInfo.platform}</p>
+    </div>
+  );
+};
 
 ## 🎨 样式处理
 

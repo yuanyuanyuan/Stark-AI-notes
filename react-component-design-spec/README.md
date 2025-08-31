@@ -1,19 +1,19 @@
 # React 组件设计规范
 
-> 基于 React 19.1.1 和 TypeScript 的组件开发最佳实践
+> 基于 React 18.3.1 和 Next.js App Router 的客户端与服务端组件开发最佳实践
 
 ## 📋 概述
 
-本项目提供了一套完整的 React 组件设计规范和开发工具，帮助开发者快速构建高质量、可维护的 React 组件。
+本项目提供了一套完整的 React 组件设计规范和开发工具，专门针对客户端组件和服务端组件的分离开发，帮助开发者快速构建高质量、可维护的 React 应用。
 
 ## ✨ 核心特性
 
-- 🎯 **基于最佳实践**: 遵循 React 官方和社区认可的开发标准
+- 🎯 **分离架构**: 明确区分客户端和服务端组件的使用场景
 - 🔧 **完整工具链**: 包含代码生成器、验证规则、检查清单
-- 📚 **丰富模板**: 提供多种组件类型的完整模板
+- 📚 **丰富模板**: 提供客户端和服务端组件的完整模板
 - 🧪 **测试驱动**: 内置完整的测试策略和模板
 - ♿ **无障碍支持**: 完整的可访问性指南和实现
-- ⚡ **性能优化**: 内置性能优化策略和工具
+- 🚀 **现代架构**: 基于 Next.js App Router 和 React 18.3.1
 
 ## 🚀 快速开始
 
@@ -57,42 +57,58 @@ node tools/validation-rules.js list-rules
 
 ```
 react-component-design-spec/
-├── component-design-spec.md          # 核心设计规范文档
-├── templates/                        # 代码模板目录
-│   ├── component-template.tsx        # 组件代码模板
-│   ├── component-test-template.tsx   # 测试代码模板
-│   └── component-types-template.ts   # 类型定义模板
-├── examples/                         # 示例组件目录
-│   ├── basic-component-example.tsx    # 基础组件示例
-│   ├── form-component-example.tsx     # 表单组件示例
-│   └── complex-component-example.tsx  # 复杂组件示例
-├── checklists/                       # 检查清单目录
-│   ├── design-checklist.md           # 设计检查清单
-│   ├── code-review-checklist.md      # 代码评审检查清单
-│   └── testing-checklist.md          # 测试检查清单
-├── tools/                           # 自动化工具目录
-│   ├── component-generator.js        # 组件生成器
-│   └── validation-rules.js           # 验证规则工具
-└── README.md                        # 项目说明文档
+├── client-component-spec.md            # 客户端组件规范文档
+├── server-component-spec.md            # 服务端组件规范文档
+├── templates/                          # 代码模板目录
+│   ├── client-component-template.tsx   # 客户端组件模板
+│   ├── server-component-template.tsx   # 服务端组件模板
+│   ├── component-test-template.tsx     # 测试代码模板
+│   └── component-types-template.ts     # 类型定义模板
+├── examples/                           # 示例组件目录
+│   ├── client-component-example.tsx    # 客户端组件示例
+│   ├── server-component-example.tsx    # 服务端组件示例
+│   └── hybrid-usage-example.tsx        # 混合使用示例
+├── checklists/                         # 检查清单目录
+│   ├── design-checklist.md             # 设计检查清单
+│   ├── code-review-checklist.md        # 代码评审检查清单
+│   └── testing-checklist.md            # 测试检查清单
+├── tools/                             # 自动化工具目录
+│   ├── component-generator.js          # 组件生成器
+│   └── validation-rules.js             # 验证规则工具
+└── README.md                          # 项目说明文档
 ```
 
 ## 🎯 核心设计原则
 
-### SOLID 原则
+### 客户端组件原则
 
-1. **单一职责原则 (SRP)**: 每个组件只负责一个功能
-2. **开放封闭原则 (OCP)**: 对扩展开放，对修改封闭
-3. **里氏替换原则 (LSP)**: 子组件可以替换父组件
-4. **接口隔离原则 (ISP)**: 接口应该小而专一
-5. **依赖倒置原则 (DIP)**: 依赖抽象而非具体实现
+- **交互性**: 处理用户交互、事件响应、状态管理
+- **浏览器API**: 可以使用浏览器原生API和DOM操作
+- **Hooks支持**: 完整的React Hooks支持（useState, useEffect等）
+- **实时更新**: 支持实时状态更新和重新渲染
+- **'use client'指令**: 必须在文件顶部声明
+
+### 服务端组件原则
+
+- **服务端渲染**: 在服务器端渲染，零客户端JavaScript
+- **数据获取**: 直接访问数据库和API，无CORS限制
+- **SEO优化**: 对搜索引擎友好的HTML输出
+- **安全敏感**: 适合处理敏感数据和逻辑
+- **异步支持**: 支持async/await数据获取
 
 ### 组件分类
 
-- **基础组件**: Button、Input、Card 等可复用组件
-- **表单组件**: Form、FormField、FormValidation 等表单相关组件
-- **复杂组件**: DataTable、Chart、Modal 等复杂交互组件
-- **容器组件**: 页面级组件，负责布局和状态管理
-- **布局组件**: Grid、Container、Flex 等布局相关组件
+**客户端组件类型:**
+- **交互组件**: Button、Input、Form等需要用户交互的组件
+- **状态组件**: 包含复杂状态管理的组件
+- **事件处理**: 需要处理DOM事件的组件
+- **动画组件**: 需要浏览器API的动画效果
+
+**服务端组件类型:**
+- **展示组件**: 静态内容展示、数据表格
+- **布局组件**: 页面布局、导航结构
+- **数据获取**: 数据库查询、API调用
+- **SEO组件**: 元数据、结构化数据
 
 ## 📝 使用指南
 
@@ -105,17 +121,41 @@ react-component-design-spec/
 cat checklists/design-checklist.md
 ```
 
+**重要决策点:**
+- 选择客户端组件还是服务端组件
+- 确定组件边界和职责划分
+- 设计props接口和数据流
+
 ### 2. 开发阶段
 
-使用代码生成器创建新组件：
+根据组件类型选择相应的规范和模板：
 
+**客户端组件开发:**
+```bash
+# 参考客户端组件规范
+cat client-component-spec.md
+
+# 使用客户端组件模板
+cp templates/client-component-template.tsx src/components/YourComponent.tsx
+```
+
+**服务端组件开发:**
+```bash
+# 参考服务端组件规范
+cat server-component-spec.md
+
+# 使用服务端组件模板
+cp templates/server-component-template.tsx src/components/YourComponent.tsx
+```
+
+使用代码生成器创建新组件：
 ```bash
 # 启动组件生成器
 node tools/component-generator.js
 
-# 按照提示输入组件信息
+# 按照提示选择组件类型和配置
 # - 组件名称
-# - 组件类型
+# - 客户端或服务端组件
 # - 技术栈选择
 # - 测试需求
 ```
@@ -252,16 +292,25 @@ $ node tools/validation-rules.js validate src/components/UserProfile
 
 ## 📚 模板说明
 
-### 组件模板 (`templates/component-template.tsx`)
+### 客户端组件模板 (`templates/client-component-template.tsx`)
 
-包含完整的组件结构：
+包含完整的客户端组件结构：
 - TypeScript 类型定义
-- React Hooks 使用
-- 事件处理
-- 状态管理
-- 样式处理
-- 错误边界
-- 可访问性支持
+- React Hooks 使用（useState, useEffect, useCallback等）
+- 事件处理和状态管理
+- 样式处理和主题系统
+- 错误边界和可访问性支持
+- 'use client' 指令
+
+### 服务端组件模板 (`templates/server-component-template.tsx`)
+
+包含完整的服务端组件结构：
+- TypeScript 类型定义
+- 异步数据获取和处理
+- 服务端渲染优化
+- 缓存策略和SEO优化
+- 零客户端JavaScript
+- 数据库和API集成
 
 ### 测试模板 (`templates/component-test-template.tsx`)
 
@@ -345,15 +394,30 @@ $ node tools/validation-rules.js validate src/components/UserProfile
 
 ## 🛠️ 技术栈
 
-- **React**: 19.1.1
+### 核心技术
+- **React**: 18.3.1
+- **Next.js**: 14.x (App Router)
 - **TypeScript**: 5.x
 - **Testing Library**: @testing-library/react
 - **Vitest**: 测试运行器
+
+### 客户端组件技术
+- **React Hooks**: useState, useEffect, useCallback, useMemo
+- **状态管理**: React Context, useReducer
+- **浏览器API**: DOM操作、事件监听、本地存储
+- **CSS方案**: Styled Components, Tailwind CSS, CSS Modules
+
+### 服务端组件技术
+- **Async/Await**: 异步数据获取
+- **缓存策略**: React Cache, Next.js Cache
+- **数据库集成**: Prisma, Drizzle, 直接数据库访问
+- **API集成**: 服务端API调用，无CORS限制
+
+### 开发工具
 - **ESLint**: 代码质量检查
 - **Prettier**: 代码格式化
-- **Styled Components**: CSS-in-JS (可选)
-- **Tailwind CSS**: 原子化 CSS (可选)
-- **CSS Modules**: CSS 模块化 (可选)
+- **Husky**: Git hooks管理
+- **TypeScript**: 类型检查
 
 ## 📝 贡献指南
 
