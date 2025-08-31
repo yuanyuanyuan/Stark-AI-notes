@@ -1,0 +1,212 @@
+{
+  "scanTimestamp": "2025-08-29T10:42:15.000Z",
+  "scanVersion": "1.0.0",
+  "projectInfo": {
+    "name": "github-copilot-prompts",
+    "type": "documentation",
+    "description": "GitHub Copilot提示模板和AI开发模式文档仓库",
+    "totalFiles": 52,
+    "scannedFiles": 52,
+    "coveragePercentage": 100
+  },
+  "modules": [
+    {
+      "path": "ai-dev-mvp",
+      "name": "多代理AI开发系统",
+      "type": "core",
+      "files": 15,
+      "entryFile": "main.prompt.md",
+      "interfaces": [
+        "Agent调度系统",
+        "模板化代码生成",
+        "自动化测试",
+        "代码质量审查",
+        "文档自动化"
+      ],
+      "dependencies": [
+        "templates/code_template",
+        "templates/tests_template",
+        "prompts"
+      ],
+      "testing": "完整覆盖Agent协作流程",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "best-particses",
+      "name": "最佳实践和设计原则",
+      "type": "guidelines",
+      "files": 6,
+      "entryFile": "软件设计原则.md",
+      "interfaces": [
+        "SOLID设计原则",
+        "任务规划方法论",
+        "代码注释规范",
+        "技术集成指南"
+      ],
+      "dependencies": [],
+      "testing": "原则遵循检查和架构评审",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "代码分析的prompt指令",
+      "name": "代码分析提示模板",
+      "type": "templates",
+      "files": 5,
+      "entryFile": "代码架构解析（面向开发人员）.md",
+      "interfaces": [
+        "业务功能脉络分析",
+        "字段依赖分析",
+        "代码架构解析",
+        "前后端专项分析"
+      ],
+      "dependencies": [],
+      "testing": "多角色分析和准确性验证",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "测试任务prompt指令",
+      "name": "测试相关提示模板",
+      "type": "templates",
+      "files": 6,
+      "entryFile": "版本2/README.md",
+      "interfaces": [
+        "需求分析指令",
+        "测试场景生成",
+        "评审辅助指令",
+        "遗留代码分析",
+        "测试代码生成"
+      ],
+      "dependencies": [],
+      "testing": "指令效果和覆盖率评估",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "mcp-docs",
+      "name": "Model Context Protocol文档",
+      "type": "protocol",
+      "files": 8,
+      "entryFile": "mcp-protocol-core.md",
+      "interfaces": [
+        "MCP协议规范",
+        "传输协议实现",
+        "客户端模板",
+        "质量标准指南"
+      ],
+      "dependencies": [
+        "JSON-RPC 2.0",
+        "TypeScript",
+        "Node.js"
+      ],
+      "testing": "协议兼容性和性能测试",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "ooda-docs",
+      "name": "OODA循环决策框架",
+      "type": "framework",
+      "files": 6,
+      "entryFile": "README.md",
+      "interfaces": [
+        "Observe Agent",
+        "Orient Agent",
+        "Decide Agent",
+        "Act Agent"
+      ],
+      "dependencies": [
+        "Claude AI",
+        "多种工具集成"
+      ],
+      "testing": "Agent协作和决策质量测试",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "笔记",
+      "name": "开发思考和经验总结",
+      "type": "knowledge",
+      "files": 2,
+      "entryFile": "原始笔记.md",
+      "interfaces": [
+        "原始思考记录",
+        "增强分析版本"
+      ],
+      "dependencies": [],
+      "testing": "知识管理和实用性验证",
+      "coverage": 100,
+      "status": "complete"
+    },
+    {
+      "path": "rule收集",
+      "name": "提示规则和样本收集",
+      "type": "templates",
+      "files": 2,
+      "entryFile": "prompt-样本.md",
+      "interfaces": [
+        "基础提示规则",
+        "高级提示技巧",
+        "样本示例"
+      ],
+      "dependencies": [],
+      "testing": "规则有效性和样本测试",
+      "coverage": 100,
+      "status": "complete"
+    }
+  ],
+  "coverageStats": {
+    "totalFiles": 52,
+    "scannedFiles": 52,
+    "documentedModules": 9,
+    "coveragePercentage": 100,
+    "ignoredFiles": 0,
+    "largeFiles": 0,
+    "truncated": false
+  },
+  "gaps": {
+    "critical": [],
+    "major": [],
+    "minor": [
+      "需要添加更多语言和框架的代码模板",
+      "需要完善测试用例生成模板",
+      "需要增强代码审查规则库",
+      "需要添加更多最佳实践案例"
+    ]
+  },
+  "nextSteps": [
+    "添加更多语言和框架的代码模板",
+    "完善测试用例生成模板",
+    "增强代码审查规则库",
+    "添加更多最佳实践案例",
+    "扩展DevOps角色分析模板",
+    "完善安全性和隐私保护指南"
+  ],
+  "scanConfiguration": {
+    "ignorePatterns": [
+      "node_modules/**",
+      ".git/**",
+      ".github/**",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "__pycache__/**",
+      "*.lock",
+      "*.log",
+      "*.bin",
+      "*.pdf",
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.mp4",
+      "*.zip",
+      "*.tar",
+      "*.gz"
+    ],
+    "maxFileSize": "10MB",
+    "scanDepth": 3
+  }
+}

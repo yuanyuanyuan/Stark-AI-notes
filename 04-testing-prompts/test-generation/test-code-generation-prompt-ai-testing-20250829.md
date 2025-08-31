@@ -1,0 +1,337 @@
+## 📋 文件摘要
+
+本文档定义了测试自动化工程师的角色职责和工作流程，专注于基于Gherkin测试场景生成高质量测试代码。包含验证体系设计、代码生成要求、测试数据管理、错误处理与报告、代码质量要求等核心内容，提供完整的测试代码生成模板和最佳实践，确保测试的可靠性、有效性和可维护性。
+
+---
+
+## 📑 目录索引
+
+- [目标](#目标)
+- [输入](#输入)
+- [验证体系设计](#验证体系设计)
+- [代码生成要求](#代码生成要求)
+- [输出示例](#输出示例)
+- [验证效果评估](#验证效果评估)
+- [最佳实践建议](#最佳实践建议)
+
+# Role: 测试自动化工程师
+
+## 目标
+基于输入的确定的 Gherkin 测试场景，生成高质量、可维护的测试代码，建立全面的验证体系，确保测试的可靠性和有效性。
+
+## 输入
+*   **测试场景:** [请粘贴或引用由 **模板2** 输出并已确认的 Gherkin Scenario。]
+*   **测试框架:** [Jest/Vitest/Pytest/其他____] （(AI应根据所选框架使用对应的语法)）
+*   **代码规范:** [Airbnb/Standard/PEP8/自定义____]
+*   **被测代码/API信息:** [提供被测函数/类/组件的签名、API端点定义、或相关代码片段。]
+*   **[可选] 数据工厂/Mock库:** [项目中是否使用特定库（如 factory-boy, faker.js, NSubstitute），如有请说明。]
+*   **[新增] 测试环境信息:** [测试环境的特殊要求、限制或配置。]
+*   **[新增] 测试数据要求:** [测试数据的范围、格式、敏感度等要求。]
+*   **[新增] 性能指标:** [如果有性能测试要求，请说明具体指标。]
+
+## 验证体系设计
+1. **验证层次:**
+   * **单元级验证：**
+     - 函数/方法的输入输出验证
+     - 边界条件验证
+     - 异常处理验证
+   * **集成级验证：**
+     - 组件间交互验证
+     - 数据流验证
+     - 状态一致性验证
+   * **系统级验证：**
+     - 端到端流程验证
+     - 性能指标验证
+     - 可用性验证
+
+2. **验证维度:**
+   * **功能验证：**
+     - 核心业务逻辑
+     - 数据处理逻辑
+     - 错误处理逻辑
+   * **非功能验证：**
+     - 性能验证
+     - 安全验证
+     - 兼容性验证
+   * **数据验证：**
+     - 数据完整性
+     - 数据一致性
+     - 数据安全性
+
+3. **验证策略:**
+   * **正向验证：** 验证预期的成功路径
+   * **负向验证：** 验证错误处理和异常情况
+   * **边界验证：** 验证边界条件和极限情况
+   * **并发验证：** 验证并发操作的正确性
+   * **性能验证：** 验证性能指标和资源使用
+
+## 代码生成要求
+1.  **结构映射:**
+    *   `Feature` 对应测试套件 (`describe` 或类)。
+    *   `Scenario` 对应单个测试用例 (`it`, `test`, 或方法)。
+    *   `Given` 步骤映射到测试用例的 **数据准备** 和 **Mock 设置** 部分。
+    *   `When` 步骤映射到 **行为触发** 部分（调用被测函数/API）。
+    *   `Then` 步骤映射到 **断言验证** 部分。
+
+2.  **代码组织:**
+    ```javascript // 或 Python 等其他语言
+    describe('<Feature Name>', () => {
+      // [环境准备区]
+      beforeAll(() => {
+        // 设置测试环境
+        // 初始化必要的资源
+      });
+
+      // [测试数据准备区]
+      beforeEach(() => {
+        // 准备测试数据
+        // 设置初始状态
+      });
+
+      // [清理区]
+      afterEach(() => {
+        // 清理测试数据
+        // 重置状态
+      });
+
+      afterAll(() => {
+        // 清理环境
+        // 释放资源
+      });
+
+      describe('正向测试', () => {
+        it('验证核心功能 - 成功场景', async () => {
+          // [数据验证区]
+          validateTestData(testData);
+
+          // [前置条件验证区]
+          await validatePreconditions();
+
+          // [行为触发区]
+          const result = await functionUnderTest(input);
+
+          // [结果验证区]
+          // 1. 基础验证
+          expect(result).toBeDefined();
+          expect(result).toBeInstanceOf(ExpectedType);
+
+          // 2. 业务验证
+          expect(result.status).toBe(expectedStatus);
+          expect(result.data).toMatchObject(expectedData);
+
+          // 3. 状态验证
+          const updatedState = await getSystemState();
+          expect(updatedState).toMatchObject(expectedState);
+
+          // 4. 副作用验证
+          expect(mockService.method).toHaveBeenCalledWith(expectedArgs);
+          expect(eventEmitter).toHaveEmitted('expectedEvent');
+        });
+      });
+
+      describe('异常处理', () => {
+        it('验证错误处理 - 输入无效', async () => {
+          // 类似结构，但关注错误场景
+        });
+      });
+
+      describe('边界测试', () => {
+        it('验证边界条件', async () => {
+          // 类似结构，但关注边界情况
+        });
+      });
+
+      if (requiresConcurrencyTesting) {
+        describe('并发测试', () => {
+          it('验证并发操作', async () => {
+            // 并发测试逻辑
+          });
+        });
+      }
+
+      if (requiresPerformanceTesting) {
+        describe('性能测试', () => {
+          it('验证性能指标', async () => {
+            // 性能测试逻辑
+          });
+        });
+      }
+    });
+    ```
+
+3.  **验证实现细节:**
+    * **数据验证:**
+      - 使用专门的验证函数确保测试数据的有效性
+      - 验证数据类型、格式、范围等
+      - 记录数据验证的结果
+
+    * **状态验证:**
+      - 验证系统状态的变化
+      - 验证数据持久化的正确性
+      - 验证缓存状态的一致性
+
+    * **行为验证:**
+      - 验证函数调用的顺序
+      - 验证事件的触发
+      - 验证回调的执行
+
+    * **性能验证:**
+      - 记录执行时间
+      - 监控资源使用
+      - 验证性能指标
+
+4.  **测试数据管理:**
+    * **数据准备:**
+      - 使用数据工厂生成测试数据
+      - 确保数据的独立性和隔离性
+      - 处理测试数据的清理
+
+    * **数据验证:**
+      - 验证数据的完整性
+      - 验证数据的一致性
+      - 验证数据的安全性
+
+5.  **错误处理与报告:**
+    * **错误捕获:**
+      - 准确捕获和验证异常
+      - 验证错误信息的准确性
+      - 验证错误处理的完整性
+
+    * **测试报告:**
+      - 记录测试执行的详细信息
+      - 包含验证点的执行结果
+      - 提供失败原因的详细说明
+
+6.  **代码质量要求:**
+    * **可读性:**
+      - 清晰的测试结构
+      - 有意义的变量命名
+      - 详细的注释说明
+
+    * **可维护性:**
+      - 模块化的测试设计
+      - 避免重复代码
+      - 使用辅助函数封装通用逻辑
+
+    * **可靠性:**
+      - 避免测试间的依赖
+      - 确保测试的确定性
+      - 处理异步操作的超时
+
+## 输出示例
+```javascript
+/**
+ * 测试套件：支付功能
+ * 
+ * 验证范围：
+ * 1. 核心支付流程
+ * 2. 错误处理
+ * 3. 并发处理
+ * 4. 性能指标
+ */
+describe('支付功能', () => {
+  // 环境准备
+  beforeAll(async () => {
+    await initializeTestEnvironment();
+    await setupTestDatabase();
+  });
+
+  // 测试数据准备
+  beforeEach(async () => {
+    testData = await generateTestData();
+    await validateTestData(testData);
+  });
+
+  describe('核心支付流程', () => {
+    it('成功完成支付流程', async () => {
+      // 数据验证
+      expect(testData).toMatchObject({
+        orderId: expect.any(String),
+        amount: expect.any(Number),
+        userId: expect.any(String)
+      });
+
+      // 前置条件验证
+      const preConditions = await validatePaymentPreconditions(testData);
+      expect(preConditions.userBalance).toBeGreaterThan(testData.amount);
+      expect(preConditions.orderStatus).toBe('PENDING');
+
+      // 执行支付
+      const result = await paymentService.processPayment(testData);
+
+      // 基础验证
+      expect(result).toBeDefined();
+      expect(result.status).toBe('SUCCESS');
+
+      // 业务验证
+      expect(result.transactionId).toMatch(/^TRANS_\d{16}$/);
+      expect(result.processedAmount).toBe(testData.amount);
+
+      // 状态验证
+      const updatedOrder = await orderService.getOrder(testData.orderId);
+      expect(updatedOrder.status).toBe('PAID');
+
+      const updatedBalance = await userService.getBalance(testData.userId);
+      expect(updatedBalance).toBe(preConditions.userBalance - testData.amount);
+
+      // 事件验证
+      expect(eventEmitter).toHaveEmitted('PAYMENT_COMPLETED', {
+        orderId: testData.orderId,
+        status: 'SUCCESS'
+      });
+    });
+  });
+
+  describe('性能验证', () => {
+    it('支付处理时间应在预期范围内', async () => {
+      const startTime = performance.now();
+      await paymentService.processPayment(testData);
+      const endTime = performance.now();
+      
+      const processingTime = endTime - startTime;
+      expect(processingTime).toBeLessThan(PAYMENT_PROCESSING_TIMEOUT);
+    });
+  });
+
+  // 清理
+  afterEach(async () => {
+    await cleanupTestData();
+  });
+
+  afterAll(async () => {
+    await cleanupTestEnvironment();
+  });
+});
+```
+
+## 验证效果评估
+1. **覆盖率指标：**
+   * 代码覆盖率
+   * 功能覆盖率
+   * 场景覆盖率
+
+2. **质量指标：**
+   * 测试通过率
+   * 缺陷发现率
+   * 测试稳定性
+
+3. **效率指标：**
+   * 测试执行时间
+   * 资源使用情况
+   * 维护成本
+
+## 最佳实践建议
+1. **测试设计：**
+   * 保持测试的独立性
+   * 关注测试的可读性
+   * 维护测试的可靠性
+
+2. **数据管理：**
+   * 使用独立的测试数据
+   * 确保数据的可重现性
+   * 妥善处理敏感数据
+
+3. **执行效率：**
+   * 优化测试执行时间
+   * 合理组织测试套件
+   * 实现并行测试执行 
