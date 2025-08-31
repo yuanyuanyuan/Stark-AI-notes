@@ -1,0 +1,21 @@
+{
+  "id": "approval_1756630765983_cfplbxusw",
+  "title": "水印产品复刻项目设计文档",
+  "filePath": ".spec-workflow/specs/watermark-tool-react-clone/design.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-08-31T08:59:25.983Z",
+  "category": "spec",
+  "categoryName": "watermark-tool-react-clone",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. 去掉性能测试。\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"去掉性能测试。\",\n      \"timestamp\": \"2025-08-31T09:07:06.361Z\",\n      \"id\": \"comment_1756631226361_b2s4u1u4k\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. 去掉性能测试。\\n\\n\",\n  \"timestamp\": \"2025-08-31T09:07:24.733Z\"\n}",
+  "respondedAt": "2025-08-31T09:07:24.736Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "去掉性能测试。",
+      "timestamp": "2025-08-31T09:07:06.361Z",
+      "id": "comment_1756631226361_b2s4u1u4k"
+    }
+  ]
+}

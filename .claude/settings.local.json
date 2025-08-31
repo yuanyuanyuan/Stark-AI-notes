@@ -8,7 +8,9 @@
       "mcp__spec-workflow__request-approval",
       "mcp__spec-workflow__get-approval-status",
       "mcp__spec-workflow__spec-status",
-      "mcp__spec-workflow__manage-tasks"
+      "mcp__spec-workflow__manage-tasks",
+      "mcp__spec-workflow__get-steering-context",
+      "mcp__spec-workflow__delete-approval"
     ],
     "deny": [],
     "ask": []
