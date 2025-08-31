@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- 基础SEO信息 -->
+    <title>水印生成工具 - DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting</title>
+    <meta name="description"
+        content="为您的PDF和DOC文件添加专业水印 📝 提示：DOCX文件将转换为PDF格式并添加水印 ⚠️ 注意：老版本DOC文件可能无法提取原文内容 建议使用DOCX或PDF格式">
+    <meta name="keywords"
+        content="为您的PDF和DOC文件添加专业水印, DOCX文件将转换为PDF格式并添加水印, 老版本DOC文件可能无法提取原文内容, 建议使用DOCX或PDF格式, DKFile, 免费网页托管, HTML托管, 静态网站托管, 网页发布, 免费建站">
+    <meta name="author" content="lingzi">
+    <meta name="generator" content="DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting">
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
+    <meta name="bingbot" content="index, follow">
+    <meta name="rating" content="general">
+    <meta name="revisit-after" content="7 days">
+    <meta name="distribution" content="global">
+    <meta name="language" content="zh-CN">
+    <meta name="geo.region" content="CN">
+    <meta name="geo.country" content="China">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#007bff">
+    <meta name="msapplication-TileColor" content="#007bff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="水印生成工具">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+
+    <!-- 反馈弹窗样式 -->
+    <style>
+        #feedbackModal .modal-content {
+            border-radius: 16px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        #feedbackModal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom: none;
+            padding: 1.5rem 1.5rem 1rem;
+        }
+
+        #feedbackModal .modal-header .btn-close {
+            filter: invert(1);
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        #feedbackModal .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+
+        #feedbackModal .modal-title {
+            color: white;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        #feedbackModal .modal-title i {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        #feedbackModal .modal-body {
+            padding: 1.5rem;
+        }
+
+        #feedbackModal .modal-footer {
+            padding: 1rem 1.5rem 1.5rem;
+            border-top: none;
+        }
+
+        .feedback-type-btn {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .feedback-type-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .feedback-textarea {
+            transition: border-color 0.3s ease;
+        }
+
+        .feedback-textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        @media (max-width: 768px) {
+            .feedback-type-btn {
+                min-height: 40px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* 右下角浮动反馈按钮样式 */
+        .floating-feedback-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: none;
+            text-decoration: none;
+        }
+
+        .floating-feedback-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+            color: white;
+            text-decoration: none;
+        }
+
+        .floating-feedback-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .floating-feedback-btn i {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        .floating-btn-text {
+            font-size: 10px;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .floating-feedback-btn {
+                bottom: 80px;
+                right: 15px;
+                width: 50px;
+                height: 50px;
+            }
+
+            .floating-feedback-btn i {
+                font-size: 18px;
+            }
+
+            .floating-btn-text {
+                font-size: 9px;
+            }
+        }
+
+        /* 右下角固定浮层按钮组 */
+        .floating-action-buttons {
+            position: fixed;
+            bottom: 80px;
+            right: 30px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .floating-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            position: relative;
+        }
+
+        .floating-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .floating-btn:active {
+            transform: translateY(0);
+        }
+
+        .floating-btn.like-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .floating-btn.like-btn.favorited {
+            background: linear-gradient(135deg, #ff4757 0%, #c44569 100%);
+        }
+
+        .floating-btn.favorite-btn {
+            background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+        }
+
+        .floating-btn.favorite-btn.favorited {
+            background: linear-gradient(135deg, #ff9ff3 0%, #f368e0 100%);
+        }
+
+        .floating-btn.feedback-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .floating-btn.share-btn {
+            background: linear-gradient(135deg, #20c997 0%, #6f42c1 100%);
+        }
+
+        /* 浮层弹窗样式 */
+        .floating-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .floating-panel {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .floating-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 24px 16px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .floating-title {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .floating-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .floating-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .floating-body {
+            padding: 24px;
+        }
+
+        .floating-footer {
+            padding: 20px 24px 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .floating-btn-action {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .floating-btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .floating-btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .floating-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .floating-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 反馈表单样式 */
+        .feedback-tool-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .feedback-section {
+            margin-bottom: 24px;
+        }
+
+        .feedback-label {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: block;
+            color: #333;
+        }
+
+        .feedback-type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .feedback-type-item {
+            position: relative;
+        }
+
+        .feedback-type-input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .feedback-type-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            color: #666;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .feedback-type-input:checked+.feedback-type-btn {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .feedback-type-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .feedback-textarea-wrapper {
+            position: relative;
+        }
+
+        .feedback-textarea {
+            width: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            resize: none;
+            transition: border-color 0.3s ease;
+            font-family: inherit;
+        }
+
+        .feedback-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .feedback-char-count {
+            position: absolute;
+            bottom: 8px;
+            right: 12px;
+            font-size: 12px;
+            color: #999;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .feedback-hint {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .feedback-notice {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .feedback-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .feedback-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 分享菜单样式 */
+        .share-menu {
+            background: white;
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+        }
+
+        .share-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .share-subtitle {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 32px;
+            font-weight: 400;
+        }
+
+        .share-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .share-btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+
+
+        .share-btn.x-twitter {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .share-btn.x-twitter:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+
+
+        /* X 图标样式 */
+        .x-icon {
+            color: white;
+        }
+
+        .share-btn.weibo {
+            background: linear-gradient(135deg, #E6162D 0%, #c41230 100%);
+            box-shadow: 0 4px 15px rgba(230, 22, 45, 0.3);
+        }
+
+        .share-btn.weibo:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(230, 22, 45, 0.4);
+        }
+
+
+
+        .share-btn.copy {
+            background: linear-gradient(135deg, #20c997 0%, #6f42c1 100%);
+            box-shadow: 0 4px 15px rgba(32, 201, 151, 0.3);
+        }
+
+        .share-btn.copy:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(32, 201, 151, 0.4);
+        }
+
+        /* GitHub 分享按钮 */
+        .share-btn.github {
+            background: linear-gradient(135deg, #24292e 0%, #2f363d 100%);
+            box-shadow: 0 4px 15px rgba(36, 41, 46, 0.3);
+        }
+
+        .share-btn.github:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(36, 41, 46, 0.4);
+        }
+
+        /* Reddit 分享按钮 */
+        .share-btn.reddit {
+            background: linear-gradient(135deg, #FF4500 0%, #FF6B35 100%);
+            box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3);
+        }
+
+        .share-btn.reddit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 69, 0, 0.4);
+        }
+
+        /* LinkedIn 分享按钮 */
+        .share-btn.linkedin {
+            background: linear-gradient(135deg, #0077B5 0%, #00A0DC 100%);
+            box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
+        }
+
+        .share-btn.linkedin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 119, 181, 0.4);
+        }
+
+
+
+        /* WhatsApp 分享按钮 */
+        .share-btn.whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+
+        .share-btn.whatsapp:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+        }
+
+        /* Telegram 分享按钮 */
+        .share-btn.telegram {
+            background: linear-gradient(135deg, #0088CC 0%, #00A8E8 100%);
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+        }
+
+        .share-btn.telegram:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.4);
+        }
+
+        .share-btn i {
+            font-size: 18px;
+        }
+
+        .share-divider {
+            margin: 24px 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e9ecef, transparent);
+        }
+
+        .share-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .share-info-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .share-info-content {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* 分享按钮网格布局 */
+        .share-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .floating-action-buttons {
+                bottom: 100px;
+                right: 20px;
+                gap: 8px;
+            }
+
+            .share-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .floating-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+            }
+
+            .floating-overlay {
+                padding: 10px;
+            }
+
+            .floating-panel {
+                max-height: 95vh;
+            }
+
+            .floating-header {
+                padding: 16px 20px 12px;
+            }
+
+            .floating-body {
+                padding: 20px;
+            }
+
+            .floating-footer {
+                padding: 16px 20px 20px;
+            }
+
+            .feedback-type-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+
+            .share-menu {
+                padding: 24px;
+                max-width: 90vw;
+            }
+
+            .share-title {
+                font-size: 1.25rem;
+            }
+
+            .share-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 24px;
+            }
+
+            .share-buttons {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-bottom: 24px;
+            }
+
+            .share-btn {
+                padding: 14px 20px;
+                font-size: 14px;
+            }
+
+            .share-info {
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+
+    <!-- 性能优化 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="referrer" content="origin-when-cross-origin">
+
+    <!-- DNS 预解析优化 -->
+    <link rel="dns-prefetch" href="//www.googletagmanager.com">
+    <link rel="dns-prefetch" href="//pagead2.googlesyndication.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+
+    <!-- 资源预连接 -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://dkfile.com/lingzi/addWatermark.html">
+    <meta property="og:title" content="水印生成工具">
+    <meta property="og:description"
+        content="为您的PDF和DOC文件添加专业水印 📝 提示：DOCX文件将转换为PDF格式并添加水印 ⚠️ 注意：老版本DOC文件可能无法提取原文内容 建议使用DOCX或PDF格式">
+
+    <meta property="og:image" content="http://dkfile.com/static/dkfile-logo.png">
+
+    <meta property="og:site_name" content="DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:updated_time" content="2025-07-31T16:52:46.598949">
+    <meta property="article:author" content="lingzi">
+    <meta property="article:published_time" content="2025-07-31T16:52:46.598949">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="http://dkfile.com/lingzi/addWatermark.html">
+    <meta property="twitter:title" content="水印生成工具">
+    <meta property="twitter:description"
+        content="为您的PDF和DOC文件添加专业水印 📝 提示：DOCX文件将转换为PDF格式并添加水印 ⚠️ 注意：老版本DOC文件可能无法提取原文内容 建议使用DOCX或PDF格式">
+
+    <meta property="twitter:image" content="http://dkfile.com/static/dkfile-logo.png">
+    <meta property="twitter:image:alt" content="DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting Logo">
+
+    <meta property="twitter:creator" content="@lingzi">
+    <meta property="twitter:site" content="@DKFile">
+
+    <!-- 结构化数据 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "水印生成工具",
+        "description": "为您的PDF和DOC文件添加专业水印 📝 提示：DOCX文件将转换为PDF格式并添加水印 ⚠️ 注意：老版本DOC文件可能无法提取原文内容 建议使用DOCX或PDF格式",
+        "url": "http://dkfile.com/lingzi/addWatermark.html",
+        "headline": "水印生成工具",
+        "wordCount": 449,
+        "author": {
+            "@type": "Person",
+            "name": "lingzi",
+            "url": "http://dkfile.com/#user-lingzi"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting",
+            "url": "http://dkfile.com/",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "http://dkfile.com/static/dkfile-logo.png",
+                "width": 200,
+                "height": 200
+            }
+        },
+        "datePublished": "2025-07-31T16:52:46.598949",
+        "dateModified": "2025-07-31T16:52:46.598949",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "http://dkfile.com/lingzi/addWatermark.html"
+        },
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting",
+            "url": "http://dkfile.com/",
+            "description": "DKFile是专业的免费HTML网页托管平台，支持AI编程和DeepSeek代码生成。无需域名和服务器，手机上随时随地编程，一键上传HTML文件即可获得公网访问链接。DKFile为开发者、学生和设计师提供零门槛的网页发布服务，集成AI编程助手，让您的项目瞬间展示给全世界。"
+        },
+        "inLanguage": "zh-CN",
+        "potentialAction": {
+            "@type": "ReadAction",
+            "target": "http://dkfile.com/lingzi/addWatermark.html"
+        }
+    }
+    </script>
+
+    <!-- 面包屑导航结构化数据 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting",
+                "item": "http://dkfile.com/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "lingzi",
+                "item": "http://dkfile.com/#user-lingzi"
+            },
+            {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "水印生成工具",
+                "item": "http://dkfile.com/lingzi/addWatermark.html"
+            }
+        ]
+    }
+    </script>
+
+    <!-- 网站图标 -->
+    <link rel="icon" href="/static/dkfile-logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/dkfile-logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/dkfile-logo.png">
+    <link rel="shortcut icon" href="/static/dkfile-logo.png" type="image/png">
+
+    <!-- 规范链接 -->
+    <link rel="canonical" href="http://dkfile.com/lingzi/addWatermark.html">
+
+    <!-- 平台链接 -->
+    <link rel="alternate" type="text/html" href="http://dkfile.com/"
+        title="DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting">
+
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="http://dkfile.com/">
+
+    <!-- Google AdSense 将通过异步加载器加载 -->
+
+    <style>
+        .platform-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 100;
+        }
+
+        .footer-brand a {
+            color: #1a1a1a;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            transition: color 0.2s ease;
+        }
+
+        .footer-brand a:hover {
+            color: #007bff;
+        }
+
+        .footer-divider {
+            width: 1px;
+            height: 16px;
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        .footer-support {
+            position: relative;
+        }
+
+        .footer-support a {
+            color: #666;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 16px;
+            background: rgba(0, 123, 255, 0.05);
+            border: 1px solid rgba(0, 123, 255, 0.1);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-support a::before {
+            content: "🛠️";
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .footer-support a::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .footer-support a:hover {
+            color: #007bff;
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        }
+
+        .footer-support a:hover::after {
+            left: 100%;
+        }
+
+        .footer-support a:active {
+            transform: translateY(0);
+        }
+
+        /* 我的收藏链接样式 */
+        .footer-favorites a {
+            color: #ff6b6b;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 16px;
+            background: rgba(255, 107, 107, 0.05);
+            border: 1px solid rgba(255, 107, 107, 0.1);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer-favorites a::before {
+            content: "❤️";
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .footer-favorites a::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .footer-favorites a:hover {
+            color: #ff4757;
+            background: rgba(255, 107, 107, 0.1);
+            border-color: rgba(255, 107, 107, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.15);
+        }
+
+        .footer-favorites a:hover::after {
+            left: 100%;
+        }
+
+        .footer-favorites a:active {
+            transform: translateY(0);
+        }
+
+        /* 覆盖base.html中的padding-bottom设置 */
+        body {
+            padding-bottom: 0 !important;
+        }
+
+
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .platform-footer {
+                padding: 10px 15px;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .footer-brand a {
+                font-size: 13px;
+            }
+
+            .footer-support a {
+                font-size: 11px;
+                padding: 5px 10px;
+                gap: 4px;
+            }
+
+            .footer-support a::before {
+                font-size: 10px;
+            }
+
+            .footer-favorites a {
+                font-size: 11px;
+                padding: 5px 10px;
+                gap: 4px;
+            }
+
+            .footer-favorites a::before {
+                font-size: 10px;
+            }
+        }
+
+        /* 功能按钮样式 */
+        .action-buttons-container {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-btn i {
+            font-size: 16px;
+            margin-bottom: 3px;
+        }
+
+        .action-btn .btn-text {
+            font-size: 9px;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .like-btn {
+            color: #ff4757;
+            background: rgba(255, 71, 87, 0.05);
+        }
+
+        .like-btn:hover {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+        }
+
+        .like-btn.liked {
+            background: #ff4757;
+            color: white;
+        }
+
+        .favorite-btn {
+            color: #ffa502;
+            background: rgba(255, 165, 2, 0.05);
+        }
+
+        .favorite-btn:hover {
+            background: rgba(255, 165, 2, 0.1);
+            color: #ffa502;
+        }
+
+        .favorite-btn.favorited {
+            background: #ffa502;
+            color: white;
+        }
+
+        .share-btn {
+            color: #3742fa;
+            background: rgba(55, 66, 250, 0.05);
+        }
+
+        .share-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .feedback-btn {
+            color: #a55eea;
+            background: rgba(165, 94, 234, 0.05);
+        }
+
+        .feedback-btn:hover {
+            background: rgba(165, 94, 234, 0.1);
+            color: #a55eea;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .action-buttons-container {
+                bottom: 100px;
+                right: 15px;
+            }
+
+            .action-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .action-btn i {
+                font-size: 14px;
+            }
+
+            .action-btn .btn-text {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content-wrapper">
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>水印生成工具</title>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+
+                body {
+                    font-family: 'Microsoft YaHei', Arial, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                }
+
+                .container {
+                    background: white;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                    padding: 40px;
+                    max-width: 600px;
+                    width: 100%;
+                }
+
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+
+                .header h1 {
+                    color: #333;
+                    font-size: 2.5em;
+                    margin-bottom: 10px;
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+
+                .header p {
+                    color: #666;
+                    font-size: 1.1em;
+                }
+
+                .upload-section {
+                    margin-bottom: 30px;
+                }
+
+                .file-input-wrapper {
+                    position: relative;
+                    margin-bottom: 20px;
+                }
+
+                .file-input {
+                    width: 100%;
+                    padding: 15px;
+                    border: 3px dashed #ddd;
+                    border-radius: 10px;
+                    background: #f8f9fa;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-align: center;
+                    font-size: 1.1em;
+                    color: #666;
+                }
+
+                .file-input:hover {
+                    border-color: #667eea;
+                    background: #f0f2ff;
+                }
+
+                .file-input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+
+                .watermark-section {
+                    margin-bottom: 30px;
+                }
+
+                .form-group {
+                    margin-bottom: 20px;
+                }
+
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-weight: bold;
+                    color: #333;
+                    font-size: 1.1em;
+                }
+
+                .form-group input,
+                .form-group select {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    font-size: 1em;
+                    transition: all 0.3s ease;
+                }
+
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+
+                .color-picker {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .color-picker input[type="color"] {
+                    width: 60px;
+                    height: 40px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                }
+
+                .button-group {
+                    display: flex;
+                    gap: 15px;
+                    margin-top: 30px;
+                }
+
+                .btn {
+                    flex: 1;
+                    padding: 15px 30px;
+                    border: none;
+                    border-radius: 10px;
+                    font-size: 1.1em;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+
+                .btn-primary {
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    color: white;
+                }
+
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+                }
+
+                .btn-secondary {
+                    background: #f8f9fa;
+                    color: #666;
+                    border: 2px solid #ddd;
+                }
+
+                .btn-secondary:hover {
+                    background: #e9ecef;
+                    border-color: #adb5bd;
+                }
+
+                .btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+
+                .progress {
+                    margin-top: 20px;
+                    display: none;
+                }
+
+                .progress-bar {
+                    width: 100%;
+                    height: 8px;
+                    background: #f0f0f0;
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+
+                .progress-fill {
+                    height: 100%;
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    width: 0%;
+                    transition: width 0.3s ease;
+                }
+
+                .status {
+                    margin-top: 10px;
+                    text-align: center;
+                    font-weight: bold;
+                    color: #666;
+                }
+
+                .error {
+                    color: #dc3545;
+                    background: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                    display: none;
+                }
+
+                .success {
+                    color: #155724;
+                    background: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    padding: 10px;
+                    border-radius: 5px;
+                    margin-top: 10px;
+                    display: none;
+                }
+
+                .file-info {
+                    margin-top: 15px;
+                    padding: 15px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    display: none;
+                }
+
+                .file-info h4 {
+                    margin-bottom: 10px;
+                    color: #333;
+                }
+
+                .file-info p {
+                    color: #666;
+                    margin-bottom: 5px;
+                }
+
+                @media (max-width: 768px) {
+                    .container {
+                        padding: 20px;
+                        margin: 10px;
+                    }
+
+                    .header h1 {
+                        font-size: 2em;
+                    }
+
+                    .button-group {
+                        flex-direction: column;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>水印生成工具</h1>
+                    <p>为您的PDF和DOC文件添加专业水印</p>
+                    <p style="font-size: 0.9em; color: #888; margin-top: 10px;">
+                        📝 提示：DOCX文件将转换为PDF格式并添加水印
+                    </p>
+                    <p style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                        ⚠️ 注意：老版本DOC文件可能无法提取原文内容，建议使用DOCX或PDF格式
+                    </p>
+                </div>
+
+                <div class="upload-section">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx" />
+                    </div>
+                    <div class="file-info" id="fileInfo">
+                        <h4>文件信息</h4>
+                        <p id="fileName"></p>
+                        <p id="fileSize"></p>
+                        <p id="fileType"></p>
+                    </div>
+                </div>
+
+                <div class="watermark-section">
+                    <div class="form-group">
+                        <label for="watermarkText">水印文字</label>
+                        <input type="text" id="watermarkText" placeholder="请输入水印文字" value="机密文件" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fontSize">字体大小</label>
+                        <select id="fontSize">
+                            <option value="24">小 (24px)</option>
+                            <option value="36" selected>中 (36px)</option>
+                            <option value="48">大 (48px)</option>
+                            <option value="60">特大 (60px)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="opacity">透明度</label>
+                        <select id="opacity">
+                            <option value="0.1">很淡 (10%)</option>
+                            <option value="0.3" selected>淡 (30%)</option>
+                            <option value="0.5">中等 (50%)</option>
+                            <option value="0.7">深 (70%)</option>
+                            <option value="0.9">很深 (90%)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rotation">旋转角度</label>
+                        <select id="rotation">
+                            <option value="-45" selected>左上到右下 (-45°)</option>
+                            <option value="-30">左上到右下 (-30°)</option>
+                            <option value="0">水平 (0°)</option>
+                            <option value="30">右上到左下 (30°)</option>
+                            <option value="45">右上到左下 (45°)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>水印颜色</label>
+                        <div class="color-picker">
+                            <input type="color" id="watermarkColor" value="#ff0000" />
+                            <span id="colorValue">#ff0000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="generateBtn" onclick="generateWatermark()">
+                        生成水印
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetForm()">
+                        重置
+                    </button>
+                </div>
+
+                <div class="progress" id="progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="status" id="status">处理中...</div>
+                </div>
+
+                <div class="error" id="error"></div>
+                <div class="success" id="success"></div>
+            </div>
+
+            <script>
+                let selectedFile = null;
+
+                // 文件选择处理
+                document.getElementById('fileInput').addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        selectedFile = file;
+                        showFileInfo(file);
+                        hideMessages();
+                    }
+                });
+
+                // 颜色选择器处理
+                document.getElementById('watermarkColor').addEventListener('change', function (e) {
+                    document.getElementById('colorValue').textContent = e.target.value;
+                });
+
+                // 显示文件信息
+                function showFileInfo(file) {
+                    const fileInfo = document.getElementById('fileInfo');
+                    const fileName = document.getElementById('fileName');
+                    const fileSize = document.getElementById('fileSize');
+                    const fileType = document.getElementById('fileType');
+
+                    fileName.textContent = `文件名: ${file.name}`;
+                    fileSize.textContent = `文件大小: ${formatFileSize(file.size)}`;
+                    fileType.textContent = `文件类型: ${file.type || '未知'}`;
+                    fileInfo.style.display = 'block';
+                }
+
+                // 格式化文件大小
+                function formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                }
+
+                // 隐藏消息
+                function hideMessages() {
+                    document.getElementById('error').style.display = 'none';
+                    document.getElementById('success').style.display = 'none';
+                }
+
+                // 显示错误消息
+                function showError(message) {
+                    const error = document.getElementById('error');
+                    error.textContent = message;
+                    error.style.display = 'block';
+                    document.getElementById('success').style.display = 'none';
+                }
+
+                // 显示成功消息
+                function showSuccess(message) {
+                    const success = document.getElementById('success');
+                    success.textContent = message;
+                    success.style.display = 'block';
+                    document.getElementById('error').style.display = 'none';
+                }
+
+                // 重置表单
+                function resetForm() {
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('watermarkText').value = '机密文件';
+                    document.getElementById('fontSize').value = '36';
+                    document.getElementById('opacity').value = '0.3';
+                    document.getElementById('rotation').value = '-45';
+                    document.getElementById('watermarkColor').value = '#ff0000';
+                    document.getElementById('colorValue').textContent = '#ff0000';
+                    document.getElementById('fileInfo').style.display = 'none';
+                    document.getElementById('progress').style.display = 'none';
+                    hideMessages();
+                    selectedFile = null;
+                }
+
+                // 更新进度条
+                function updateProgress(percent, status) {
+                    document.getElementById('progressFill').style.width = percent + '%';
+                    document.getElementById('status').textContent = status;
+                }
+
+                // 检查必需的库是否已加载
+                function checkLibraries() {
+                    const libraries = {
+                        'PDFLib': typeof PDFLib !== 'undefined',
+                        'mammoth': typeof mammoth !== 'undefined',
+                        'JSZip': typeof JSZip !== 'undefined'
+                    };
+
+                    console.log('库加载状态:', libraries);
+
+                    const missingLibs = Object.keys(libraries).filter(lib => !libraries[lib]);
+                    if (missingLibs.length > 0) {
+                        throw new Error(`以下库未正确加载: ${missingLibs.join(', ')}`);
+                    }
+
+                    return true;
+                }
+
+                // 生成水印
+                async function generateWatermark() {
+                    if (!selectedFile) {
+                        showError('请先选择文件');
+                        return;
+                    }
+
+                    const watermarkText = document.getElementById('watermarkText').value.trim();
+                    if (!watermarkText) {
+                        showError('请输入水印文字');
+                        return;
+                    }
+
+                    // 检查库是否正确加载
+                    try {
+                        checkLibraries();
+                    } catch (libError) {
+                        showError('系统库加载失败: ' + libError.message);
+                        return;
+                    }
+
+                    const fontSize = parseInt(document.getElementById('fontSize').value);
+                    const opacity = parseFloat(document.getElementById('opacity').value);
+                    const rotation = parseInt(document.getElementById('rotation').value);
+                    const color = document.getElementById('watermarkColor').value;
+
+                    // 显示进度条
+                    document.getElementById('progress').style.display = 'block';
+                    document.getElementById('generateBtn').disabled = true;
+                    hideMessages();
+
+                    try {
+                        updateProgress(10, '开始处理文件...');
+
+                        const fileType = selectedFile.name.toLowerCase();
+                        let result;
+
+                        if (fileType.endsWith('.pdf')) {
+                            result = await processPDF(selectedFile, watermarkText, fontSize, opacity, rotation, color);
+                        } else if (fileType.endsWith('.doc') || fileType.endsWith('.docx')) {
+                            result = await processDOC(selectedFile, watermarkText, fontSize, opacity, rotation, color);
+                        } else {
+                            throw new Error('不支持的文件格式');
+                        }
+
+                        updateProgress(100, '处理完成！');
+
+                        // 下载文件
+                        const link = document.createElement('a');
+                        link.href = result;
+
+                        // 根据原文件类型设置下载文件名
+                        const originalName = selectedFile.name;
+                        const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
+
+                        if (fileType.endsWith('.pdf')) {
+                            link.download = `watermarked_${originalName}`;
+                        } else if (fileType.endsWith('.doc') || fileType.endsWith('.docx')) {
+                            // DOC/DOCX文件转换为PDF，所以下载为PDF格式
+                            link.download = `watermarked_${nameWithoutExt}.pdf`;
+                        }
+
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // 显示成功消息
+                        if (fileType.endsWith('.pdf')) {
+                            showSuccess('水印添加成功！PDF文件已下载。');
+                        } else if (fileType.endsWith('.doc') || fileType.endsWith('.docx')) {
+                            showSuccess('水印添加成功！DOC文件已转换为PDF格式并下载。');
+                        }
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showError('处理文件时出错: ' + error.message);
+                    } finally {
+                        document.getElementById('generateBtn').disabled = false;
+                        setTimeout(() => {
+                            document.getElementById('progress').style.display = 'none';
+                        }, 2000);
+                    }
+                }
+
+                // 处理PDF文件
+                async function processPDF(file, watermarkText, fontSize, opacity, rotation, color) {
+                    try {
+                        updateProgress(20, '读取PDF文件...');
+
+                        const arrayBuffer = await file.arrayBuffer();
+                        const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                        const pages = pdfDoc.getPages();
+
+                        updateProgress(40, '添加水印...');
+
+                        for (let i = 0; i < pages.length; i++) {
+                            const page = pages[i];
+                            const { width, height } = page.getSize();
+
+                            // 添加中心水印
+                            await addWatermarkToPage(pdfDoc, page, watermarkText, width / 2, height / 2, fontSize, color, opacity, rotation);
+
+                            // 添加网格状水印以覆盖整个页面
+                            const rows = Math.ceil(height / (fontSize * 3));
+                            const cols = Math.ceil(width / (fontSize * 6));
+
+                            for (let row = 0; row < rows; row++) {
+                                for (let col = 0; col < cols; col++) {
+                                    const x = (col + 0.5) * (width / cols);
+                                    const y = (row + 0.5) * (height / rows);
+
+                                    await addWatermarkToPage(pdfDoc, page, watermarkText, x, y, fontSize * 0.8, color, opacity * 0.5, rotation);
+                                }
+                            }
+
+                            updateProgress(40 + (i + 1) / pages.length * 40, `处理第 ${i + 1}/${pages.length} 页...`);
+                        }
+
+                        updateProgress(80, '生成最终文件...');
+
+                        const pdfBytes = await pdfDoc.save();
+                        return URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
+                    } catch (error) {
+                        console.error('处理PDF文件时出错:', error);
+                        throw new Error('PDF文件处理失败: ' + error.message);
+                    }
+                }
+
+                // 处理DOC文件
+                async function processDOC(file, watermarkText, fontSize, opacity, rotation, color) {
+                    try {
+                        updateProgress(20, '读取DOC文件...');
+
+                        const arrayBuffer = await file.arrayBuffer();
+                        let extractedText = '';
+                        let extractionSuccess = false;
+
+                        // 验证文件数据
+                        console.log('文件大小:', file.size);
+                        console.log('ArrayBuffer大小:', arrayBuffer.byteLength);
+                        console.log('文件类型:', file.type);
+
+                        // 检查ArrayBuffer是否有效
+                        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                            throw new Error('文件读取失败，ArrayBuffer为空');
+                        }
+
+                        // 检查文件的真实格式
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        const fileSignature = uint8Array.slice(0, 4);
+                        console.log('文件前4字节:', Array.from(fileSignature).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+                        // 判断真实的文件类型
+                        const isRealDocx = fileSignature[0] === 0x50 && fileSignature[1] === 0x4B; // PK (ZIP/DOCX)
+                        const isRealDoc = fileSignature[0] === 0xD0 && fileSignature[1] === 0xCF;  // OLE2 (DOC)
+
+                        console.log('文件类型检测:');
+                        console.log('- 是真正的DOCX (ZIP格式):', isRealDocx);
+                        console.log('- 是老版本DOC (OLE2格式):', isRealDoc);
+                        console.log('- 文件扩展名:', file.name.toLowerCase().split('.').pop());
+
+                        // 根据真实文件格式处理，而不是扩展名
+                        if (isRealDocx) {
+                            // 处理DOCX文件
+                            try {
+                                console.log('开始解析DOCX文件...');
+                                console.log('检查JSZip是否可用:', typeof JSZip !== 'undefined');
+                                console.log('检查Mammoth是否可用:', typeof mammoth !== 'undefined');
+
+                                // 确保JSZip已加载
+                                if (typeof JSZip === 'undefined') {
+                                    throw new Error('JSZip库未正确加载');
+                                }
+
+                                // 验证DOCX文件格式
+                                const isValidZip = await validateZipFile(uint8Array);
+                                if (!isValidZip) {
+                                    console.error('文件不是有效的ZIP/DOCX格式');
+                                    throw new Error('文件格式无效，不是有效的DOCX文件');
+                                }
+
+                                // 尝试多种方法处理ArrayBuffer
+                                const bufferVariants = [
+                                    arrayBuffer,                           // 原始buffer
+                                    arrayBuffer.slice(0),                 // 复制buffer
+                                    new Uint8Array(arrayBuffer).buffer    // 重新构造buffer
+                                ];
+
+                                let mammothSuccess = false;
+
+                                // 尝试使用不同的buffer变体
+                                for (let i = 0; i < bufferVariants.length && !mammothSuccess; i++) {
+                                    try {
+                                        console.log(`尝试Mammoth解析，变体 ${i + 1}...`);
+                                        const result = await mammoth.extractRawText({ arrayBuffer: bufferVariants[i] });
+                                        console.log('Mammoth解析结果:', result);
+
+                                        if (result.value && result.value.trim().length > 0) {
+                                            extractedText = result.value;
+                                            extractionSuccess = true;
+                                            mammothSuccess = true;
+                                            console.log('Mammoth内容提取成功！');
+                                            break;
+                                        }
+                                    } catch (mammothError) {
+                                        console.warn(`Mammoth解析变体 ${i + 1} 失败:`, mammothError.message);
+                                    }
+                                }
+
+                                // 如果Mammoth失败，尝试直接使用JSZip解析
+                                if (!mammothSuccess) {
+                                    console.log('尝试使用JSZip直接解析DOCX...');
+
+                                    for (let i = 0; i < bufferVariants.length && !extractionSuccess; i++) {
+                                        try {
+                                            console.log(`尝试JSZip解析，变体 ${i + 1}...`);
+                                            const zip = await JSZip.loadAsync(bufferVariants[i]);
+
+                                            // 列出ZIP文件中的所有文件
+                                            console.log('ZIP文件内容:', Object.keys(zip.files));
+
+                                            const documentXml = await zip.file('word/document.xml').async('text');
+
+                                            // 简单的XML文本提取（移除XML标签）
+                                            const textContent = documentXml
+                                                .replace(/<[^>]*>/g, '') // 移除XML标签
+                                                .replace(/\s+/g, ' ')    // 合并多个空格
+                                                .trim();
+
+                                            if (textContent.length > 0) {
+                                                extractedText = textContent;
+                                                extractionSuccess = true;
+                                                console.log('JSZip直接解析成功！提取文本长度:', textContent.length);
+                                                console.log('文本预览:', textContent.substring(0, 200));
+                                                break;
+                                            } else {
+                                                console.warn('JSZip解析返回空内容');
+                                            }
+                                        } catch (jsZipError) {
+                                            console.error(`JSZip解析变体 ${i + 1} 失败:`, jsZipError.message);
+                                        }
+                                    }
+                                }
+
+                                if (!extractionSuccess) {
+                                    console.warn('所有DOCX解析方法都失败了');
+                                }
+
+                            } catch (docxError) {
+                                console.error('DOCX解析完全失败:', docxError);
+                                extractionSuccess = false;
+                            }
+                        } else if (isRealDoc || file.name.toLowerCase().endsWith('.doc')) {
+                            // 对于老版本的DOC文件（包括扩展名伪装的），由于格式复杂，我们不尝试提取内容
+                            console.log('检测到老版本DOC文件（OLE2格式），将创建仅包含水印的PDF');
+                            console.log('注意：文件扩展名可能是.docx，但实际格式是老版本DOC');
+                            extractionSuccess = false;
+                        } else {
+                            // 未知格式
+                            console.error('未知的文件格式');
+                            throw new Error('不支持的文件格式：既不是DOCX也不是DOC');
+                        }
+
+                        updateProgress(40, '创建PDF文档...');
+
+                        // 创建新的PDF文档
+                        const pdfDoc = await PDFLib.PDFDocument.create();
+
+                        // 如果成功提取了文本内容
+                        if (extractionSuccess && extractedText) {
+                            console.log('开始添加提取的文本内容到PDF...');
+
+                            // 注册fontkit以支持自定义字体
+                            pdfDoc.registerFontkit(fontkit);
+
+                            // 尝试嵌入支持中文的字体
+                            updateProgress(45, '加载中文字体...');
+                            const chineseFont = await loadChineseFont(pdfDoc);
+
+                            if (chineseFont) {
+                                console.log('将使用中文字体渲染');
+                            } else {
+                                console.log('将使用分离显示方案');
+                            }
+
+                            // 添加提取的文本内容
+                            const lines = extractedText.split('\n');
+                            let currentPage = pdfDoc.addPage([595.28, 841.89]);
+                            const { width, height } = currentPage.getSize();
+                            let y = height - 50;
+                            const lineHeight = 16;
+                            const fontSize = 11;
+                            const maxWidth = width - 100;
+
+                            console.log(`准备处理 ${lines.length} 行文本`);
+
+                            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                                let line = lines[lineIndex];
+
+                                // 如果是空行，跳过但保留行距
+                                if (!line.trim()) {
+                                    y -= lineHeight;
+                                    continue;
+                                }
+
+                                // 处理长行，进行自动换行
+                                while (line.length > 0) {
+                                    if (y < 50) {
+                                        currentPage = pdfDoc.addPage([595.28, 841.89]);
+                                        y = height - 50;
+                                        console.log('创建新页面');
+                                    }
+
+                                    // 计算每行最大字符数（中文字符占用更多空间）
+                                    const maxCharsPerLine = Math.floor(maxWidth / (fontSize * 0.8));
+                                    let lineText = line.substring(0, maxCharsPerLine);
+
+                                    // 在单词边界处断行
+                                    if (line.length > maxCharsPerLine) {
+                                        const lastSpace = lineText.lastIndexOf(' ');
+                                        if (lastSpace > maxCharsPerLine * 0.7) {
+                                            lineText = lineText.substring(0, lastSpace);
+                                            line = line.substring(lastSpace + 1);
+                                        } else {
+                                            line = line.substring(maxCharsPerLine);
+                                        }
+                                    } else {
+                                        line = '';
+                                    }
+
+                                    if (lineText.trim()) {
+                                        try {
+                                            if (chineseFont) {
+                                                // 如果有中文字体，直接渲染包含中文的文本
+                                                currentPage.drawText(lineText, {
+                                                    x: 50,
+                                                    y: y,
+                                                    size: fontSize,
+                                                    font: chineseFont,
+                                                    color: PDFLib.rgb(0, 0, 0)
+                                                });
+                                                console.log(`成功添加第 ${lineIndex + 1} 行（中文字体）`);
+                                            } else {
+                                                // 使用Canvas渲染方案
+                                                await renderTextWithCanvas(pdfDoc, currentPage, lineText, 50, y, fontSize);
+                                                console.log(`成功添加第 ${lineIndex + 1} 行（Canvas渲染）`);
+                                            }
+                                        } catch (textError) {
+                                            console.warn(`第 ${lineIndex + 1} 行渲染失败:`, textError.message);
+                                            // 添加错误占位符
+                                            try {
+                                                currentPage.drawText('[Text rendering error]', {
+                                                    x: 50,
+                                                    y: y,
+                                                    size: fontSize,
+                                                    color: PDFLib.rgb(0.5, 0.5, 0.5)
+                                                });
+                                            } catch (e) {
+                                                console.warn('连占位符都无法渲染');
+                                            }
+                                        }
+                                    }
+                                    y -= lineHeight;
+                                }
+                            }
+
+                            console.log('文本内容添加完成！');
+                        } else {
+                            // 如果无法提取内容，创建一个说明页面
+                            const infoPage = pdfDoc.addPage([595.28, 841.89]);
+                            const { width, height } = infoPage.getSize();
+
+                            // 根据真实文件格式生成说明
+                            const realFormat = isRealDoc ? 'DOC (OLE2)' :
+                                isRealDocx ? 'DOCX (ZIP)' : 'Unknown';
+                            const fileExt = file.name.toLowerCase().split('.').pop();
+
+                            const infoLines = [
+                                'Watermark Applied Successfully',
+                                '',
+                                `Original File: ${file.name}`,
+                                `File Extension: .${fileExt}`,
+                                `Actual Format: ${realFormat}`,
+                                `File Size: ${(file.size / 1024).toFixed(2)} KB`,
+                                `Processing Date: ${new Date().toLocaleDateString()}`,
+                                '',
+                                'Note: This is a watermarked version of your document.',
+                                '',
+                                isRealDoc
+                                    ? 'This file is in the old DOC format (Microsoft OLE2).'
+                                    : 'The document content could not be extracted.',
+                                isRealDoc
+                                    ? 'Even if the extension is .docx, the internal format is DOC.'
+                                    : 'This may be due to format complexity or corruption.',
+                                '',
+                                'For best results, please consider:',
+                                '1. Open the file in Microsoft Word',
+                                '2. Save it as a new DOCX file (File > Save As > .docx)',
+                                '3. Or convert to PDF format before adding watermarks',
+                                '4. Keep the original file for reference',
+                                '',
+                                'The watermark has been successfully applied to protect',
+                                'your document content.'
+                            ];
+
+                            let y = height - 100;
+                            const lineHeight = 20;
+
+                            // 添加标题
+                            try {
+                                infoPage.drawText('Watermark Applied Successfully', {
+                                    x: width / 2 - 120,
+                                    y: y,
+                                    size: 18,
+                                    color: PDFLib.rgb(0, 0, 0)
+                                });
+                                y -= lineHeight * 2;
+
+                                // 添加信息文本
+                                for (const line of infoLines.slice(2)) {
+                                    if (line) {
+                                        infoPage.drawText(line, {
+                                            x: 50,
+                                            y: y,
+                                            size: 11,
+                                            color: PDFLib.rgb(0.2, 0.2, 0.2)
+                                        });
+                                    }
+                                    y -= lineHeight;
+                                }
+                            } catch (e) {
+                                console.warn('添加信息文本时出错:', e);
+                            }
+                        }
+
+                        updateProgress(60, '添加水印...');
+
+                        // 为所有页面添加水印
+                        const pages = pdfDoc.getPages();
+                        for (const page of pages) {
+                            const { width, height } = page.getSize();
+
+                            // 添加中心水印
+                            await addWatermarkToPage(pdfDoc, page, watermarkText, width / 2, height / 2, fontSize, color, opacity, rotation);
+
+                            // 添加多个水印以覆盖整个页面
+                            const rows = Math.ceil(height / (fontSize * 3));
+                            const cols = Math.ceil(width / (fontSize * 6));
+
+                            for (let row = 0; row < rows; row++) {
+                                for (let col = 0; col < cols; col++) {
+                                    const x = (col + 0.5) * (width / cols);
+                                    const y = (row + 0.5) * (height / rows);
+
+                                    await addWatermarkToPage(pdfDoc, page, watermarkText, x, y, fontSize * 0.8, color, opacity * 0.5, rotation);
+                                }
+                            }
+                        }
+
+                        updateProgress(80, '生成最终文件...');
+
+                        const pdfBytes = await pdfDoc.save();
+                        return URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+
+                    } catch (error) {
+                        console.error('处理DOC文件时出错:', error);
+                        throw new Error('DOC文件处理失败: ' + error.message);
+                    }
+                }
+
+                // 使用Canvas渲染中文文本为图片
+                async function renderTextAsImage(text, fontSize = 14) {
+                    return new Promise((resolve) => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // 设置字体
+                        ctx.font = `${fontSize}px "Microsoft YaHei", "SimSun", sans-serif`;
+                        ctx.fillStyle = '#000000';
+                        ctx.textBaseline = 'top';
+
+                        // 计算文本尺寸
+                        const metrics = ctx.measureText(text);
+                        const width = Math.ceil(metrics.width) + 10;
+                        const height = fontSize + 10;
+
+                        // 设置canvas尺寸
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // 重新设置字体（canvas尺寸改变后需要重设）
+                        ctx.font = `${fontSize}px "Microsoft YaHei", "SimSun", sans-serif`;
+                        ctx.fillStyle = '#000000';
+                        ctx.textBaseline = 'top';
+
+                        // 绘制文本
+                        ctx.fillText(text, 5, 5);
+
+                        // 转换为base64
+                        const imageData = canvas.toDataURL('image/png');
+                        resolve({
+                            imageData: imageData,
+                            width: width,
+                            height: height
+                        });
+                    });
+                }
+
+                // 获取中文字体 - 简化版本
+                async function loadChineseFont(pdfDoc) {
+                    // 暂时不使用在线字体，直接返回null使用Canvas方案
+                    console.log('使用Canvas渲染中文方案');
+                    return null;
+                }
+
+                // 使用Canvas渲染混合文本到PDF
+                async function renderTextWithCanvas(pdfDoc, page, text, x, y, fontSize) {
+                    try {
+                        // 将文本渲染为图片
+                        const imageInfo = await renderTextAsImage(text, fontSize);
+
+                        // 将图片嵌入PDF
+                        const image = await pdfDoc.embedPng(imageInfo.imageData);
+
+                        // 计算图片缩放比例
+                        const scale = fontSize / 14; // 基准字体大小是14
+                        const scaledWidth = imageInfo.width * scale;
+                        const scaledHeight = imageInfo.height * scale;
+
+                        // 在PDF中绘制图片
+                        page.drawImage(image, {
+                            x: x,
+                            y: y - scaledHeight + fontSize, // 调整y位置使其与文本基线对齐
+                            width: scaledWidth,
+                            height: scaledHeight
+                        });
+
+                        return scaledWidth; // 返回宽度，用于后续定位
+                    } catch (error) {
+                        console.warn('Canvas渲染失败，使用备用方案:', error.message);
+                        // 备用方案：分离显示
+                        await renderMixedTextFallback(page, text, x, y, fontSize);
+                    }
+                }
+
+                // 备用的分离显示方案
+                async function renderMixedTextFallback(page, text, x, y, fontSize) {
+                    // 将文本分成英文和中文部分
+                    const segments = [];
+                    let currentSegment = '';
+                    let isCurrentChinese = false;
+
+                    for (const char of text) {
+                        const isCharChinese = isChinese(char);
+
+                        if (isCharChinese !== isCurrentChinese) {
+                            if (currentSegment) {
+                                segments.push({ text: currentSegment, isChinese: isCurrentChinese });
+                            }
+                            currentSegment = char;
+                            isCurrentChinese = isCharChinese;
+                        } else {
+                            currentSegment += char;
+                        }
+                    }
+
+                    if (currentSegment) {
+                        segments.push({ text: currentSegment, isChinese: isCurrentChinese });
+                    }
+
+                    // 渲染各个段落
+                    let currentX = x;
+                    for (const segment of segments) {
+                        try {
+                            if (segment.isChinese) {
+                                // 中文段落用描述性文字表示
+                                const chineseDesc = `[中文:${segment.text.length}字]`;
+                                page.drawText(chineseDesc, {
+                                    x: currentX,
+                                    y: y,
+                                    size: fontSize * 0.9,
+                                    color: PDFLib.rgb(0.2, 0.4, 0.8)
+                                });
+                                currentX += chineseDesc.length * fontSize * 0.6;
+                            } else {
+                                // 英文段落正常显示
+                                page.drawText(segment.text, {
+                                    x: currentX,
+                                    y: y,
+                                    size: fontSize,
+                                    color: PDFLib.rgb(0, 0, 0)
+                                });
+                                currentX += segment.text.length * fontSize * 0.6;
+                            }
+                        } catch (e) {
+                            console.warn('段落渲染失败:', e.message);
+                        }
+                    }
+                }
+
+                // 判断是否为中文字符
+                function isChinese(char) {
+                    const code = char.charCodeAt(0);
+                    return code >= 0x4e00 && code <= 0x9fff;
+                }
+
+                // 检查文本是否包含中文
+                function containsChinese(text) {
+                    return /[\u4e00-\u9fff]/.test(text);
+                }
+
+                // 添加水印到页面（支持中文）
+                async function addWatermarkToPage(pdfDoc, page, watermarkText, x, y, fontSize, color, opacity, rotation) {
+                    try {
+                        if (containsChinese(watermarkText)) {
+                            // 如果水印包含中文，使用Canvas渲染
+                            console.log('水印包含中文，使用Canvas渲染');
+                            await addChineseWatermark(pdfDoc, page, watermarkText, x, y, fontSize, color, opacity, rotation);
+                        } else {
+                            // 如果是纯英文，直接使用文本
+                            page.drawText(watermarkText, {
+                                x: x,
+                                y: y,
+                                size: fontSize,
+                                color: PDFLib.rgb(
+                                    parseInt(color.substr(1, 2), 16) / 255,
+                                    parseInt(color.substr(3, 2), 16) / 255,
+                                    parseInt(color.substr(5, 2), 16) / 255
+                                ),
+                                opacity: opacity,
+                                rotate: PDFLib.degrees(rotation)
+                            });
+                        }
+                    } catch (error) {
+                        console.warn('水印添加失败，使用备用文本:', error.message);
+                        // 备用方案
+                        page.drawText('WATERMARK', {
+                            x: x,
+                            y: y,
+                            size: fontSize,
+                            color: PDFLib.rgb(
+                                parseInt(color.substr(1, 2), 16) / 255,
+                                parseInt(color.substr(3, 2), 16) / 255,
+                                parseInt(color.substr(5, 2), 16) / 255
+                            ),
+                            opacity: opacity,
+                            rotate: PDFLib.degrees(rotation)
+                        });
+                    }
+                }
+
+                // 添加中文水印（使用Canvas渲染）
+                async function addChineseWatermark(pdfDoc, page, watermarkText, x, y, fontSize, color, opacity, rotation) {
+                    try {
+                        // 创建带颜色和透明度的Canvas
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // 设置字体和样式
+                        ctx.font = `${fontSize}px "Microsoft YaHei", "SimSun", sans-serif`;
+                        ctx.textBaseline = 'middle';
+                        ctx.textAlign = 'center';
+
+                        // 计算文本尺寸
+                        const metrics = ctx.measureText(watermarkText);
+                        const textWidth = Math.ceil(metrics.width);
+                        const textHeight = fontSize;
+
+                        // 考虑旋转后的尺寸
+                        const radians = (rotation * Math.PI) / 180;
+                        const rotatedWidth = Math.abs(textWidth * Math.cos(radians)) + Math.abs(textHeight * Math.sin(radians));
+                        const rotatedHeight = Math.abs(textWidth * Math.sin(radians)) + Math.abs(textHeight * Math.cos(radians));
+
+                        // 设置canvas尺寸（增加边距）
+                        canvas.width = rotatedWidth + 20;
+                        canvas.height = rotatedHeight + 20;
+
+                        // 重新设置字体（canvas尺寸改变后需要重设）
+                        ctx.font = `${fontSize}px "Microsoft YaHei", "SimSun", sans-serif`;
+                        ctx.textBaseline = 'middle';
+                        ctx.textAlign = 'center';
+
+                        // 设置颜色和透明度
+                        const r = parseInt(color.substr(1, 2), 16);
+                        const g = parseInt(color.substr(3, 2), 16);
+                        const b = parseInt(color.substr(5, 2), 16);
+                        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
+                        // 移动到canvas中心并旋转
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate(radians);
+
+                        // 绘制文本
+                        ctx.fillText(watermarkText, 0, 0);
+
+                        // 转换为PNG并嵌入PDF
+                        const imageData = canvas.toDataURL('image/png');
+                        const image = await pdfDoc.embedPng(imageData);
+
+                        // 在PDF中绘制图片
+                        page.drawImage(image, {
+                            x: x - canvas.width / 2,
+                            y: y - canvas.height / 2,
+                            width: canvas.width,
+                            height: canvas.height
+                        });
+
+                        console.log('中文水印添加成功');
+                    } catch (error) {
+                        console.error('中文水印渲染失败:', error);
+                        throw error;
+                    }
+                }
+
+                // ZIP文件验证函数
+                async function validateZipFile(uint8Array) {
+                    try {
+                        // 检查ZIP文件签名
+                        // ZIP文件应该以 PK (0x50 0x4B) 开头
+                        if (uint8Array.length < 4) {
+                            console.error('文件太小，不是有效的ZIP文件');
+                            return false;
+                        }
+
+                        const signature = uint8Array.slice(0, 2);
+                        const isPK = signature[0] === 0x50 && signature[1] === 0x4B;
+
+                        console.log('ZIP签名检查:', isPK ? '通过' : '失败',
+                            `(${signature[0].toString(16)} ${signature[1].toString(16)})`);
+
+                        if (!isPK) {
+                            return false;
+                        }
+
+                        // 尝试用JSZip快速验证
+                        try {
+                            const testZip = await JSZip.loadAsync(uint8Array.buffer);
+                            const hasDocumentXml = testZip.file('word/document.xml') !== null;
+                            console.log('DOCX结构检查:', hasDocumentXml ? '通过' : '失败');
+                            return hasDocumentXml;
+                        } catch (e) {
+                            console.error('ZIP结构验证失败:', e.message);
+                            return false;
+                        }
+
+                    } catch (error) {
+                        console.error('ZIP验证过程出错:', error);
+                        return false;
+                    }
+                }
+
+                // 注意：老版本DOC文件格式复杂，无法可靠地提取中文内容
+                // 建议用户将文件转换为DOCX格式或使用PDF格式
+            </script>
+        </body>
+
+        </html>
+    </div>
+
+
+
+    <style>
+        /* 内容响应式处理 */
+        .content-wrapper {
+            overflow-x: hidden;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            padding-bottom: 80px;
+            /* 为底部平台标识留出空间 */
+        }
+
+        .content-wrapper img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-wrapper table {
+            max-width: 100%;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .content-wrapper table td,
+        .content-wrapper table th {
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .content-wrapper pre {
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .content-wrapper a {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .content-wrapper video,
+        .content-wrapper iframe {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .content-wrapper img {
+                margin: 0.5rem auto;
+                border-radius: 4px;
+            }
+
+            .content-wrapper {
+                font-size: 16px;
+                line-height: 1.6;
+                padding-bottom: 60px;
+                /* 移动端底部间距调整 */
+            }
+        }
+    </style>
+
+    <!-- 右下角固定浮层按钮组 -->
+    <div class="floating-action-buttons">
+        <!-- 点赞按钮 -->
+        <button class="floating-btn like-btn" onclick="handleLike()" title="你的点赞会把这个工具在工具库优先推荐给更多人">
+            <i class="bi bi-heart"></i>
+        </button>
+
+        <!-- 收藏按钮 -->
+        <button class="floating-btn favorite-btn" onclick="handleFavorite()" title="在用户中心会展示，帮你更快速访问这些工具">
+            <i class="bi bi-bookmark"></i>
+        </button>
+
+        <!-- 反馈按钮 -->
+        <button class="floating-btn feedback-btn" onclick="handleFeedback()" title="反馈问题或建议">
+            <i class="bi bi-chat-dots"></i>
+        </button>
+
+        <!-- 分享按钮 -->
+        <button class="floating-btn share-btn" onclick="handleShare()" title="分享到推特、微博">
+            <i class="bi bi-share"></i>
+        </button>
+    </div>
+
+    <!-- Google AdSense 广告位 - 异步加载 -->
+    <div id="adsense-container"
+        style="text-align: center; margin: 20px 0; padding: 10px; min-height: 100px; display: none;">
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-1568926315655201"
+            data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+
+    <script type="text/javascript">
+        // 等待 Google AdSense 异步加载完成
+        function initAdsenseAd() {
+            // 检查是否已经初始化过
+            if (window.adsenseAdInitialized) {
+                console.log('⚠️ AdSense 广告已经初始化过，跳过重复初始化');
+                return;
+            }
+
+            if (window.adsbygoogle && window.googleServicesLoader && window.googleServicesLoader.getServiceStatus().adsense) {
+                try {
+                    document.getElementById('adsense-container').style.display = 'block';
+
+                    // 使用更安全的广告初始化方式
+                    if (window.adsbygoogle && window.adsbygoogle.push) {
+                        window.adsbygoogle.push({});
+                        window.adsenseAdInitialized = true;
+                        console.log('✅ AdSense 广告初始化成功');
+                    }
+                } catch (error) {
+                    console.warn('AdSense 广告初始化失败:', error);
+                }
+            } else {
+                // 如果 AdSense 未加载，延迟重试
+                setTimeout(initAdsenseAd, 1000);
+            }
+        }
+
+        // 页面加载完成后尝试初始化广告
+        document.addEventListener('DOMContentLoaded', function () {
+            // 等待 google-services-loader 完成初始化
+            setTimeout(initAdsenseAd, 3000); // 延迟3秒确保服务已加载
+        });
+    </script>
+
+    <!-- 底部平台标识 -->
+    <div class="platform-footer">
+        <div class="footer-brand">
+            <a href="/" title="DKFile - 免费HTML网页托管平台 | Free HTML Website Hosting - 免费HTML网页托管平台"
+                onclick="logClick('dkfile_link')" rel="nofollow">DKFile</a>
+        </div>
+
+        <div class="footer-divider"></div>
+
+
+        <div class="footer-favorites">
+            <a href="/my_favorites" title="查看我的收藏" onclick="logClick('my_favorites_link')" rel="nofollow">
+                <i class="bi bi-bookmark-heart me-1"></i>我的收藏
+            </a>
+        </div>
+
+        <div class="footer-divider"></div>
+
+
+        <div class="footer-support">
+            <a href="http://istester.com/page/1407.html" target="_blank" rel="noopener nofollow" title="技术支持，有任何问题，可以找我"
+                onclick="logClick('tech_support')">技术支持 IDO老徐</a>
+        </div>
+    </div>
+
+    <script>
+        // 从模板变量获取数据
+        const pageData = {
+            fileId: 6175,
+            fileName: 'addWatermark.html',
+            projectName: '给docx文件设置水印',
+            author: 'lingzi'
+        };
+
+        // 用户登录状态 - 使用简单的检查方式
+        const currentUserAuthenticated = true;
+
+        // 调试信息
+        console.log('页面数据初始化:', {
+            pageData: pageData,
+            currentUserAuthenticated: currentUserAuthenticated,
+            fileId: pageData.fileId,
+            fileIdType: typeof pageData.fileId
+        });
+
+        // HTML文件完整性检测
+        function validateHtmlFile() {
+            const issues = [];
+
+            // 检测是否有多个 DOCTYPE html
+            const doctypeCount = document.querySelectorAll('html').length;
+            if (doctypeCount > 1) {
+                issues.push(`检测到 ${doctypeCount} 个HTML文档结构，文件可能包含重复内容`);
+            }
+
+            // 检测是否有多个 title 标签
+            const titleCount = document.querySelectorAll('title').length;
+            if (titleCount > 1) {
+                issues.push(`检测到 ${titleCount} 个title标签，文件结构异常`);
+            }
+
+            // 检测是否有多个 body 标签
+            const bodyCount = document.querySelectorAll('body').length;
+            if (bodyCount > 1) {
+                issues.push(`检测到 ${bodyCount} 个body标签，文件结构异常`);
+            }
+
+            // 检测是否有多个 pageData 对象（通过脚本内容检测）
+            const scripts = document.querySelectorAll('script');
+            let pageDataCount = 0;
+            scripts.forEach(script => {
+                if (script.textContent && script.textContent.includes('pageData')) {
+                    pageDataCount++;
+                }
+            });
+            if (pageDataCount > 1) {
+                issues.push(`检测到 ${pageDataCount} 个pageData对象，可能导致功能异常`);
+            }
+
+            return issues;
+        }
+
+        // 智能 pageData 选择
+        function getValidPageData() {
+            console.log('getValidPageData 被调用');
+            console.log('当前 pageData:', pageData);
+
+            // 如果当前 pageData 有效，直接使用
+            if (pageData && pageData.fileId && pageData.fileId !== 'null' && pageData.fileId !== null) {
+                console.log('使用当前 pageData:', pageData);
+                return pageData;
+            }
+
+            console.log('当前 pageData 无效，尝试查找其他数据源');
+
+            // 尝试从页面中查找其他 pageData 对象
+            const scripts = document.querySelectorAll('script');
+            let foundPageData = null;
+
+            for (let script of scripts) {
+                if (script.textContent && script.textContent.includes('pageData')) {
+                    try {
+                        // 尝试提取 pageData 对象
+                        const match = script.textContent.match(/const\s+pageData\s*=\s*({[^}]+})/);
+                        if (match) {
+                            const dataStr = match[1];
+                            // 简单的对象解析
+                            const fileIdMatch = dataStr.match(/fileId:\s*(\d+)/);
+                            if (fileIdMatch) {
+                                foundPageData = {
+                                    fileId: parseInt(fileIdMatch[1]),
+                                    fileName: 'auto-detected',
+                                    projectName: 'auto-detected',
+                                    author: 'auto-detected'
+                                };
+                                console.log('找到其他 pageData:', foundPageData);
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('解析pageData失败:', e);
+                    }
+                }
+            }
+
+            const result = foundPageData || pageData;
+            console.log('getValidPageData 返回结果:', result);
+            return result;
+        }
+
+        // 页面加载完成后进行完整性检查（仅记录到控制台，不显示给用户）
+        document.addEventListener('DOMContentLoaded', function () {
+            const issues = validateHtmlFile();
+
+            if (issues.length > 0) {
+                // 仅在控制台记录，不显示给用户
+                console.debug('HTML文件完整性检查发现问题:', issues);
+                // 移除用户界面警告显示
+            }
+        });
+
+        // 调试信息
+        console.log('用户登录状态:', currentUserAuthenticated);
+        console.log('当前用户:', 'starkyuan');
+        console.log('页面数据:', pageData);
+        console.log('文件ID:', pageData.fileId);
+
+        // 全局错误处理
+        window.addEventListener('error', function (event) {
+            console.error('全局错误:', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                error: event.error
+            });
+        });
+
+        // 未处理的Promise拒绝处理
+        window.addEventListener('unhandledrejection', function (event) {
+            console.error('未处理的Promise拒绝:', {
+                reason: event.reason,
+                promise: event.promise
+            });
+        });
+
+        // 点击记录函数
+        function logClick(action) {
+            try {
+                // 使用智能 pageData 选择
+                const validPageData = getValidPageData();
+                if (!validPageData || !validPageData.fileId) {
+                    console.debug('No valid file ID available for click logging');
+                    return;
+                }
+
+                // 发送点击记录请求
+                fetch('/api/log_click', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        log_type: 'footer_click',
+                        action: action,
+                        file_id: validPageData.fileId,
+                        extra_data: JSON.stringify({
+                            page_url: window.location.href,
+                            page_title: document.title,
+                            timestamp: new Date().toISOString(),
+                            file_name: validPageData.fileName,
+                            project_name: validPageData.projectName,
+                            author: validPageData.author
+                        })
+                    })
+                }).catch(error => {
+                    // 静默处理错误，不影响用户体验
+                    console.debug('Click logging failed:', error);
+                });
+            } catch (error) {
+                // 静默处理错误
+                console.debug('Click logging error:', error);
+            }
+        }
+
+        // 页面加载完成后记录页面访问
+        document.addEventListener('DOMContentLoaded', function () {
+            // 记录页面访问（可选）
+            logClick('page_view');
+
+            // SEO 性能监控
+            monitorSeoPerformance();
+
+
+
+            // 检查用户登录状态和收藏点赞状态
+            if (typeof currentUserAuthenticated !== 'undefined' && currentUserAuthenticated) {
+                console.log('用户已登录，开始检查收藏点赞状态');
+
+                // 使用智能 pageData 选择
+                const validPageData = getValidPageData();
+                console.log('状态检查 - 获取到的有效数据:', validPageData);
+
+                if (validPageData && validPageData.fileId) {
+                    console.log('开始检查收藏状态，文件ID:', validPageData.fileId);
+
+                    // 检查收藏状态
+                    fetch('/api/check_favorite/' + validPageData.fileId)
+                        .then(response => {
+                            console.log('检查收藏状态API响应状态:', response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('检查收藏状态API响应数据:', data);
+                            if (data.success && data.is_favorited) {
+                                const favoriteBtn = document.querySelector('.floating-btn.favorite-btn');
+                                if (favoriteBtn) {
+                                    favoriteBtn.classList.add('favorited');
+                                    favoriteBtn.innerHTML = '<i class="bi bi-bookmark-fill"></i>';
+                                    console.log('收藏状态已更新为已收藏');
+                                } else {
+                                    console.warn('未找到收藏按钮元素');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('检查收藏状态失败:', error);
+                        });
+
+                    console.log('开始检查点赞状态，文件ID:', validPageData.fileId);
+
+                    // 检查点赞状态
+                    fetch('/api/check_like/' + validPageData.fileId)
+                        .then(response => {
+                            console.log('检查点赞状态API响应状态:', response.status);
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('检查点赞状态API响应数据:', data);
+                            if (data.success && data.is_liked) {
+                                const likeBtn = document.querySelector('.floating-btn.like-btn');
+                                if (likeBtn) {
+                                    likeBtn.classList.add('liked');
+                                    likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                                    console.log('点赞状态已更新为已点赞');
+                                } else {
+                                    console.warn('未找到点赞按钮元素');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('检查点赞状态失败:', error);
+                        });
+                } else {
+                    console.warn('无法获取有效的文件数据，跳过状态检查');
+                }
+            } else {
+                console.log('用户未登录，跳过收藏点赞状态检查');
+            }
+        });
+
+        // 点赞功能
+        function handleLike() {
+            console.log('handleLike 被调用');
+            logClick('like_click');
+
+            // 检查是否登录 - 使用JavaScript检查
+            if (typeof currentUserAuthenticated === 'undefined' || !currentUserAuthenticated) {
+                console.log('用户未登录，无法点赞');
+                showToast('请先登录后再点赞');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+                return;
+            }
+
+            console.log('用户已登录，检查文件信息');
+
+            // 使用智能 pageData 选择
+            const validPageData = getValidPageData();
+            console.log('点赞 - 获取到的有效数据:', validPageData);
+
+            if (!validPageData || !validPageData.fileId) {
+                console.error('点赞失败：无效的文件数据', validPageData);
+                showToast('文件信息异常，无法执行点赞操作');
+                return;
+            }
+
+            console.log('开始发送点赞请求，文件ID:', validPageData.fileId);
+
+            fetch('/api/like', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_id: validPageData.fileId
+                })
+            })
+                .then(response => {
+                    console.log('点赞API响应状态:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('点赞API响应数据:', data);
+                    if (data.success) {
+                        const likeBtn = document.querySelector('.floating-btn.like-btn');
+                        if (data.action === 'liked') {
+                            likeBtn.classList.add('liked');
+                            likeBtn.innerHTML = '<i class="bi bi-heart-fill"></i>';
+                        } else {
+                            likeBtn.classList.remove('liked');
+                            likeBtn.innerHTML = '<i class="bi bi-heart"></i>';
+                        }
+                        showToast(data.message);
+                    } else {
+                        showToast('操作失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('点赞请求失败:', error);
+                    showToast('操作失败，请稍后重试');
+                });
+        }
+
+        // 收藏功能
+        function handleFavorite() {
+            console.log('handleFavorite 被调用');
+            logClick('favorite_click');
+
+            // 检查是否登录 - 使用JavaScript检查
+            if (typeof currentUserAuthenticated === 'undefined' || !currentUserAuthenticated) {
+                console.log('用户未登录，无法收藏');
+                showToast('请先登录后再收藏');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 1500);
+                return;
+            }
+
+            console.log('用户已登录，检查文件信息');
+
+            // 使用智能 pageData 选择
+            const validPageData = getValidPageData();
+            console.log('收藏 - 获取到的有效数据:', validPageData);
+
+            if (!validPageData || !validPageData.fileId) {
+                console.error('收藏失败：无效的文件数据', validPageData);
+                showToast('文件信息异常，无法执行收藏操作');
+                return;
+            }
+
+            console.log('开始发送收藏请求，文件ID:', validPageData.fileId);
+
+            fetch('/api/favorite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_id: validPageData.fileId
+                })
+            })
+                .then(response => {
+                    console.log('收藏API响应状态:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('收藏API响应数据:', data);
+                    if (data.success) {
+                        const favoriteBtn = document.querySelector('.floating-btn.favorite-btn');
+                        if (data.action === 'favorited') {
+                            favoriteBtn.classList.add('favorited');
+                            favoriteBtn.innerHTML = '<i class="bi bi-bookmark-fill"></i>';
+                        } else {
+                            favoriteBtn.classList.remove('favorited');
+                            favoriteBtn.innerHTML = '<i class="bi bi-bookmark"></i>';
+                        }
+                        showToast(data.message);
+                    } else {
+                        showToast('操作失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('收藏请求失败:', error);
+                    showToast('操作失败，请稍后重试');
+                });
+        }
+
+        // 分享功能
+        function handleShare() {
+            logClick('share_click');
+
+            // 添加点击动画效果
+            const shareBtn = document.querySelector('.floating-btn.share-btn');
+            shareBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                shareBtn.style.transform = '';
+            }, 150);
+
+            // 显示分享浮层
+            const shareOverlay = document.getElementById('shareOverlay');
+            shareOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭分享浮层
+        function closeShare() {
+            const shareOverlay = document.getElementById('shareOverlay');
+            shareOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // 分享到 X (Twitter) - 保持向后兼容性
+        function shareToTwitter() {
+            const url = window.location.href;
+            const title = document.title;
+            const projectName = pageData.projectName || '工具';
+
+            // 构建分享文本：项目名称 + 链接
+            const shareText = `${projectName} - ${title}`;
+
+            // 使用 X 的分享 URL（twitter.com 仍然有效，但品牌已更新为 X）
+            const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(url)}&via=DKFile`;
+
+            // 添加分享动画效果
+            const xButton = document.querySelector('.share-btn.x-twitter');
+            if (xButton) {
+                xButton.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    xButton.style.transform = '';
+                }, 150);
+            }
+
+            // 打开分享窗口
+            const shareWindow = window.open(xUrl, '_blank', 'width=600,height=500,scrollbars=yes,resizable=yes');
+
+            // 记录分享行为
+            logClick('x_twitter_share');
+
+            // 关闭分享菜单
+            closeShare();
+
+            // 检查窗口是否成功打开
+            if (shareWindow) {
+                // 添加分享成功提示
+                setTimeout(() => {
+                    showToast('正在打开 X 分享页面...');
+                }, 500);
+            } else {
+                showToast('请允许弹出窗口以分享到 X');
+            }
+        }
+
+        // 分享到微博
+        function shareToWeibo() {
+            const url = window.location.href;
+            const title = document.title;
+            const weiboUrl = `https://service.weibo.com/share/share.php?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+            window.open(weiboUrl, '_blank', 'width=600,height=400');
+            closeShare();
+        }
+
+
+
+        // 分享到 GitHub
+        function shareToGithub() {
+            const url = window.location.href;
+            const title = document.title;
+            const projectName = pageData.projectName || '工具';
+            const shareText = `Check out this awesome tool: ${projectName} - ${title}`;
+            const githubUrl = `https://github.com/new?description=${encodeURIComponent(shareText)}&filename=${encodeURIComponent(projectName)}.md`;
+            window.open(githubUrl, '_blank', 'width=800,height=600');
+            closeShare();
+        }
+
+        // 分享到 Reddit
+        function shareToReddit() {
+            const url = window.location.href;
+            const title = document.title;
+            const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+            window.open(redditUrl, '_blank', 'width=600,height=500');
+            closeShare();
+        }
+
+        // 分享到 LinkedIn
+        function shareToLinkedIn() {
+            const url = window.location.href;
+            const title = document.title;
+            const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+            window.open(linkedinUrl, '_blank', 'width=600,height=500');
+            closeShare();
+        }
+
+
+
+        // 分享到 WhatsApp
+        function shareToWhatsApp() {
+            const url = window.location.href;
+            const title = document.title;
+            const projectName = pageData.projectName || '工具';
+            const shareText = `${projectName} - ${title}\n\n${url}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+            window.open(whatsappUrl, '_blank', 'width=400,height=600');
+            closeShare();
+        }
+
+        // 分享到 Telegram
+        function shareToTelegram() {
+            const url = window.location.href;
+            const title = document.title;
+            const projectName = pageData.projectName || '工具';
+            const shareText = `${projectName} - ${title}\n\n${url}`;
+            const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(shareText)}`;
+            window.open(telegramUrl, '_blank', 'width=400,height=600');
+            closeShare();
+        }
+
+        // 关闭分享菜单
+        function closeShareMenu() {
+            const shareMenu = document.querySelector('div[style*="position: fixed"]');
+            if (shareMenu) {
+                shareMenu.remove();
+            }
+        }
+
+        // 反馈功能
+        function handleFeedback() {
+            logClick('feedback_click');
+
+            // 添加点击动画效果
+            const feedbackBtn = document.querySelector('.floating-btn.feedback-btn');
+            feedbackBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                feedbackBtn.style.transform = '';
+            }, 150);
+
+            // 显示反馈浮层
+            const feedbackOverlay = document.getElementById('feedbackOverlay');
+            feedbackOverlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭反馈浮层
+        function closeFeedback() {
+            const feedbackOverlay = document.getElementById('feedbackOverlay');
+            feedbackOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // 显示提示信息
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                z-index: 10001;
+                font-size: 14px;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+
+
+        // SEO 性能监控函数
+        function monitorSeoPerformance() {
+            try {
+                // 检查页面加载性能
+                const loadTime = performance.now();
+                const domContentLoaded = performance.getEntriesByType('navigation')[0]?.domContentLoadedEventEnd || 0;
+
+                // 检查SEO元素完整性
+                const seoElements = {
+                    title: document.title,
+                    description: document.querySelector('meta[name="description"]')?.content || '',
+                    keywords: document.querySelector('meta[name="keywords"]')?.content || '',
+                    ogTitle: document.querySelector('meta[property="og:title"]')?.content || '',
+                    ogDescription: document.querySelector('meta[property="og:description"]')?.content || '',
+                    canonical: document.querySelector('link[rel="canonical"]')?.href || '',
+                    structuredData: document.querySelectorAll('script[type="application/ld+json"]').length
+                };
+
+                // 记录SEO性能数据
+                const seoData = {
+                    load_time: Math.round(loadTime),
+                    dom_ready_time: Math.round(domContentLoaded),
+                    seo_completeness: Object.values(seoElements).filter(v => v && v !== '').length,
+                    total_seo_elements: Object.keys(seoElements).length,
+                    timestamp: new Date().toISOString()
+                };
+
+                // 发送SEO性能数据到后端（可选）
+                const validPageData = getValidPageData();
+                if (validPageData && validPageData.fileId) {
+                    fetch('/api/log_seo_performance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            file_id: validPageData.fileId,
+                            seo_data: seoData
+                        })
+                    }).catch(error => console.debug('SEO performance logging failed:', error));
+                }
+
+                // 控制台输出SEO信息
+                console.log('🔍 SEO Performance:', seoData);
+                console.log('📊 SEO Elements:', seoElements);
+
+            } catch (error) {
+                console.debug('SEO performance monitoring failed:', error);
+            }
+        }
+
+        // 复制链接
+        function copyLink() {
+            let url = window.location.href;
+            url = url.replace('http://', 'https://');
+            const title = document.title;
+            const textToCopy = `${title}\n${url}`;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                // 使用现代 Clipboard API
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('链接已复制到剪贴板');
+                    closeShare();
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(textToCopy);
+                });
+            } else {
+                // 备用方法
+                fallbackCopyTextToClipboard(textToCopy);
+            }
+        }
+
+        // 备用复制方法
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                showToast('链接已复制到剪贴板');
+                closeShare();
+            } catch (err) {
+                showToast('复制失败，请手动复制链接');
+            }
+
+            document.body.removeChild(textArea);
+        }
+    </script>
+
+    <!-- 反馈浮层弹窗 -->
+    <div id="feedbackOverlay" class="floating-overlay" onclick="if(event.target === this) closeFeedback()">
+        <div class="floating-panel">
+            <div class="floating-header">
+                <h5 class="floating-title">
+                    <i class="bi bi-chat-dots me-2"></i>问题反馈
+                </h5>
+                <button type="button" class="floating-close" onclick="closeFeedback()" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <form id="feedbackForm" enctype="multipart/form-data">
+                <div class="floating-body">
+                    <!-- 工具信息 -->
+                    <div class="feedback-tool-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>反馈来源：</strong>给docx文件设置水印
+                        <br><small class="text-muted">工具链接：http://dkfile.com/lingzi/addWatermark.html</small>
+                    </div>
+
+                    <!-- 反馈类型 -->
+                    <div class="feedback-section">
+                        <label class="feedback-label">反馈类型</label>
+                        <div class="feedback-type-grid">
+                            <div class="feedback-type-item">
+                                <input type="radio" class="feedback-type-input" name="feedback_type" id="feedback_bug"
+                                    value="bug">
+                                <label class="feedback-type-btn" for="feedback_bug">
+                                    问题反馈
+                                </label>
+                            </div>
+                            <div class="feedback-type-item">
+                                <input type="radio" class="feedback-type-input" name="feedback_type"
+                                    id="feedback_feature" value="feature">
+                                <label class="feedback-type-btn" for="feedback_feature">
+                                    功能建议/需求
+                                </label>
+                            </div>
+                            <div class="feedback-type-item">
+                                <input type="radio" class="feedback-type-input" name="feedback_type"
+                                    id="feedback_support" value="technical_support">
+                                <label class="feedback-type-btn" for="feedback_support">
+                                    技术支持
+                                </label>
+                            </div>
+                            <div class="feedback-type-item">
+                                <input type="radio" class="feedback-type-input" name="feedback_type"
+                                    id="feedback_business" value="business_cooperation">
+                                <label class="feedback-type-btn" for="feedback_business">
+                                    商务合作
+                                </label>
+                            </div>
+                            <div class="feedback-type-item">
+                                <input type="radio" class="feedback-type-input" name="feedback_type" id="feedback_other"
+                                    value="other" checked>
+                                <label class="feedback-type-btn" for="feedback_other">
+                                    其他
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 反馈内容 -->
+                    <div class="feedback-section">
+                        <label for="feedbackContent" class="feedback-label">反馈内容</label>
+                        <div class="feedback-textarea-wrapper">
+                            <textarea class="feedback-textarea" id="feedbackContent" name="description" rows="6"
+                                placeholder="请详细描述您的问题或建议..." maxlength="1000" required></textarea>
+                            <div class="feedback-char-count" id="charCount">0/1000</div>
+                        </div>
+                        <div class="feedback-hint">
+                            <i class="bi bi-info-circle me-1"></i>请尽可能详细地描述，这有助于我们更好地理解和解决问题
+                        </div>
+                        <div class="feedback-notice">
+                            <i class="bi bi-envelope me-1"></i>
+                            问题解决后，会通过你的帐号邮箱给你回复，也能在
+                            <a href="/my_feedbacks" class="feedback-link">我的反馈</a>
+                            查看问题处理进度。
+                        </div>
+                    </div>
+                </div>
+                <div class="floating-footer">
+                    <button type="button" class="floating-btn-action floating-btn-secondary" onclick="closeFeedback()">
+                        取消
+                    </button>
+                    <button type="submit" class="floating-btn-action floating-btn-primary" id="submitFeedback">
+                        <i class="bi bi-send me-1"></i>提交反馈
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 分享浮层弹窗 -->
+    <div id="shareOverlay" class="floating-overlay" onclick="if(event.target === this) closeShare()">
+        <div class="floating-panel">
+            <div class="share-menu">
+                <h5 class="share-title">
+                    <i class="bi bi-share me-2"></i>分享工具
+                </h5>
+                <p class="share-subtitle">将这个有用的工具分享给更多人</p>
+
+
+                <!-- 工具信息 -->
+                <div class="share-info">
+                    <div class="share-info-title">
+                        <i class="bi bi-info-circle me-1"></i>分享内容
+                    </div>
+                    <div class="share-info-content">
+                        <strong>给docx文件设置水印</strong><br>
+                        <small>来自 DKFile 免费HTML网页托管平台</small>
+                    </div>
+                </div>
+
+                <div class="share-buttons">
+                    <!-- 主要社交平台 -->
+                    <button class="share-btn x-twitter" onclick="shareToTwitter()">
+                        <!-- X (Twitter) 图标 - 使用 SVG 确保清晰度 -->
+                        <svg class="x-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                        <span>X (Twitter)</span>
+                    </button>
+
+                    <!-- 中文平台 -->
+                    <button class="share-btn weibo" onclick="shareToWeibo()">
+                        <i class="bi bi-chat-dots"></i>
+                        <span>微博</span>
+                    </button>
+
+                    <!-- 全球开发者平台 -->
+                    <button class="share-btn github" onclick="shareToGithub()">
+                        <i class="bi bi-github"></i>
+                        <span>GitHub</span>
+                    </button>
+
+                    <button class="share-btn reddit" onclick="shareToReddit()">
+                        <i class="bi bi-reddit"></i>
+                        <span>Reddit</span>
+                    </button>
+
+                    <!-- 专业平台 -->
+                    <button class="share-btn linkedin" onclick="shareToLinkedIn()">
+                        <i class="bi bi-linkedin"></i>
+                        <span>LinkedIn</span>
+                    </button>
+
+                    <!-- 即时通讯 -->
+                    <button class="share-btn whatsapp" onclick="shareToWhatsApp()">
+                        <i class="bi bi-whatsapp"></i>
+                        <span>WhatsApp</span>
+                    </button>
+
+                    <button class="share-btn telegram" onclick="shareToTelegram()">
+                        <i class="bi bi-telegram"></i>
+                        <span>Telegram</span>
+                    </button>
+
+                    <!-- 通用分享 -->
+                    <button class="share-btn copy" onclick="copyLink()">
+                        <i class="bi bi-link-45deg"></i>
+                        <span>复制链接</span>
+                    </button>
+                </div>
+
+                <div class="share-divider"></div>
+
+                <button class="floating-btn-action floating-btn-secondary" onclick="closeShare()">
+                    <i class="bi bi-x-lg me-1"></i>取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 移除重复的 Google 服务加载器，因为 base.html 已经包含 -->
+    <!-- <script src="/static/js/google-services-loader.js"></script> -->
+
+    <script>
+        // 字符计数功能
+        document.addEventListener('DOMContentLoaded', function () {
+            const textarea = document.getElementById('feedbackContent');
+            const charCount = document.getElementById('charCount');
+
+            if (textarea && charCount) {
+                textarea.addEventListener('input', function () {
+                    const length = this.value.length;
+                    charCount.textContent = length + '/1000';
+
+                    if (length > 900) {
+                        charCount.style.color = '#dc3545';
+                    } else if (length > 800) {
+                        charCount.style.color = '#ffc107';
+                    } else {
+                        charCount.style.color = '#999';
+                    }
+                });
+            }
+        });
+
+        // 反馈表单提交
+        document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitFeedback');
+            const originalText = submitBtn.innerHTML;
+            const formData = new FormData(this);
+
+            // 添加工具信息
+            formData.append('tool_url', 'http://dkfile.com/lingzi/addWatermark.html');
+            formData.append('tool_title', '给docx文件设置水印');
+            formData.append('tool_id', '6175');
+
+            // 显示提交中状态
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>提交中...';
+
+            fetch('/submit_feedback', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('反馈提交成功！我们会尽快处理您的反馈。');
+                        // 关闭浮层
+                        closeFeedback();
+                        // 重置表单
+                        this.reset();
+                        document.getElementById('charCount').textContent = '0/1000';
+                    } else {
+                        showToast('提交失败：' + (data.message || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('提交失败，请检查网络连接后重试');
+                })
+                .finally(() => {
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
+        });
+    </script>
+</body>
+
+</html>
