@@ -193,7 +193,8 @@ export class Generator {
     if (customTemplates) {
       const customTemplate = customTemplates.find(t => t.name === templateName);
       if (customTemplate) {
-        const compiled = this.handlebars.compile(customTemplate.template);
+        const processedTemplate = this.processTemplateInheritance(customTemplate.template, customTemplates);
+        const compiled = this.handlebars.compile(processedTemplate);
         return compiled(data);
       }
     }
@@ -208,18 +209,200 @@ export class Generator {
     return compiled(data);
   }
 
+  /**
+   * 注册自定义模板到会话
+   */
+  async registerCustomTemplate(session: WizardSession, customTemplate: CustomTemplate): Promise<void> {
+    if (!session.customTemplates) {
+      session.customTemplates = [];
+    }
+
+    // 检查是否已存在同名模板
+    const existingIndex = session.customTemplates.findIndex(t => t.name === customTemplate.name);
+    if (existingIndex >= 0) {
+      // 更新现有模板
+      session.customTemplates[existingIndex] = customTemplate;
+    } else {
+      // 添加新模板
+      session.customTemplates.push(customTemplate);
+    }
+  }
+
+  /**
+   * 获取可用模板列表
+   */
+  getAvailableTemplates(customTemplates?: CustomTemplate[]): string[] {
+    const builtinTemplates = Array.from(this.templates.keys());
+    const customTemplateNames = customTemplates?.map(t => t.name) || [];
+    
+    return [...new Set([...builtinTemplates, ...customTemplateNames])];
+  }
+
+  /**
+   * 处理模板继承（支持extends语法）
+   */
+  private processTemplateInheritance(template: string, customTemplates?: CustomTemplate[]): string {
+    // 检查是否使用了继承语法
+    const extendsMatch = template.match(/^{{#extends ["']([^"']+)["']}}/);
+    if (!extendsMatch) {
+      return template;
+    }
+
+    const parentTemplateName = extendsMatch[1];
+    let parentTemplate = '';
+
+    // 查找父模板
+    if (customTemplates) {
+      const parentCustomTemplate = customTemplates.find(t => t.name === parentTemplateName);
+      if (parentCustomTemplate) {
+        parentTemplate = parentCustomTemplate.template;
+      }
+    }
+    
+    if (!parentTemplate) {
+      parentTemplate = this.templates.get(parentTemplateName) || '';
+    }
+
+    if (!parentTemplate) {
+      throw new Error(`父模板 ${parentTemplateName} 不存在`);
+    }
+
+    // 提取子模板的块定义
+    const childBlocks = this.extractTemplateBlocks(template);
+    
+    // 将子模板的块替换到父模板中
+    let processedTemplate = parentTemplate;
+    Object.entries(childBlocks).forEach(([blockName, blockContent]) => {
+      const blockPattern = new RegExp(`{{#block ["']${blockName}["']}}[\\s\\S]*?{{/block}}`, 'g');
+      const replacement = `{{#block "${blockName}"}}${blockContent}{{/block}}`;
+      processedTemplate = processedTemplate.replace(blockPattern, replacement);
+    });
+
+    // 递归处理父模板的继承
+    return this.processTemplateInheritance(processedTemplate, customTemplates);
+  }
+
+  /**
+   * 提取模板中的块定义
+   */
+  private extractTemplateBlocks(template: string): Record<string, string> {
+    const blocks: Record<string, string> = {};
+    const blockPattern = /{{#block ["']([^"']+)["']}}([\s\S]*?){{\/block}}/g;
+    
+    let match;
+    while ((match = blockPattern.exec(template)) !== null) {
+      const [, blockName, blockContent] = match;
+      blocks[blockName] = blockContent.trim();
+    }
+    
+    return blocks;
+  }
+
+  /**
+   * 生成架构模式特定的组件
+   */
+  private generateArchitectureSpecificComponents(session: WizardSession, pattern: string): ComponentSpec[] {
+    const components: ComponentSpec[] = [];
+
+    switch (pattern) {
+      case 'micro-frontend':
+        components.push({
+          id: 'micro-frontend-shell',
+          name: 'MicroFrontendShell',
+          type: 'layout',
+          description: '微前端主容器',
+          props: [],
+          dependencies: [],
+          template: 'micro-frontend-shell',
+        });
+        break;
+
+      case 'domain-driven':
+        session.requirements.features.forEach(feature => {
+          const domainName = this.toPascalCase(feature.name);
+          components.push({
+            id: `${feature.id}-entity`,
+            name: `${domainName}Entity`,
+            type: 'business',
+            description: `${feature.name}领域实体`,
+            props: [
+              { name: 'id', type: 'string', required: true },
+              { name: 'name', type: 'string', required: true }
+            ],
+            dependencies: [],
+            template: 'domain-entity',
+          });
+        });
+        break;
+
+      case 'event-driven':
+        components.push({
+          id: 'event-bus',
+          name: 'EventBus',
+          type: 'base',
+          description: '事件总线系统',
+          props: [],
+          dependencies: [],
+          template: 'event-bus',
+        });
+        break;
+
+      case 'plugin-based':
+        components.push({
+          id: 'plugin-registry',
+          name: 'PluginRegistry',
+          type: 'base',
+          description: '插件注册器',
+          props: [],
+          dependencies: [],
+          template: 'plugin-registry',
+        });
+        break;
+    }
+
+    return components;
+  }
+
+  /**
+   * 转换为PascalCase
+   */
+  private toPascalCase(str: string): string {
+    return str.replace(/(\w)(\w*)/g, (match, first, rest) => {
+      return first.toUpperCase() + rest.toLowerCase();
+    }).replace(/[^a-zA-Z0-9]/g, '');
+  }
+
   // =============================================================================
   // 私有方法 - 架构生成
   // =============================================================================
 
   private determineArchitecturePattern(session: WizardSession): string {
-    const { teamSize, projectType, features } = session.requirements;
+    const { teamSize, projectType, features, preferences } = session.requirements;
     
-    // 基于团队规模和项目复杂度确定架构模式
-    if (teamSize <= 3 && features.length <= 10) {
+    // 检查用户偏好中是否指定了架构模式
+    const preferredPattern = preferences.find(p => p.includes('架构') || p.includes('pattern'));
+    if (preferredPattern) {
+      if (preferredPattern.includes('微前端') || preferredPattern.includes('micro-frontend')) return 'micro-frontend';
+      if (preferredPattern.includes('单体') || preferredPattern.includes('monolithic')) return 'monolithic';
+      if (preferredPattern.includes('领域驱动') || preferredPattern.includes('domain-driven')) return 'domain-driven';
+      if (preferredPattern.includes('插件化') || preferredPattern.includes('plugin')) return 'plugin-based';
+    }
+    
+    // 基于项目类型智能推荐
+    const complexFeatures = features.filter(f => f.priority === 'must-have').length;
+    const hasRealTimeFeatures = features.some(f => f.name.includes('实时') || f.name.includes('消息'));
+    const hasComplexBusiness = features.some(f => f.category === 'business' && f.estimatedEffort > 40);
+    
+    if (projectType === 'enterprise' || teamSize > 15) {
+      return 'micro-frontend';
+    } else if (hasComplexBusiness || complexFeatures > 15) {
+      return 'domain-driven';
+    } else if (teamSize <= 3 && features.length <= 10) {
       return 'modular';
     } else if (teamSize <= 10 && features.length <= 20) {
       return 'feature-based';
+    } else if (hasRealTimeFeatures) {
+      return 'event-driven';
     } else if (teamSize > 10) {
       return 'layered';
     }
@@ -297,6 +480,184 @@ export class Generator {
             }
           }
         }
+      },
+      'micro-frontend': {
+        'apps': {
+          type: 'folder',
+          description: '微前端应用',
+          children: {
+            'shell': { type: 'folder', description: '主容器应用' },
+            'modules': {
+              type: 'folder',
+              description: '功能模块',
+              children: {
+                'auth-module': { type: 'folder', description: '认证模块' },
+                'dashboard-module': { type: 'folder', description: '仪表板模块' }
+              }
+            }
+          }
+        },
+        'packages': {
+          type: 'folder',
+          description: '共享包',
+          children: {
+            'ui-components': { type: 'folder', description: 'UI组件库' },
+            'shared-utils': { type: 'folder', description: '共享工具' },
+            'design-tokens': { type: 'folder', description: '设计令牌' }
+          }
+        }
+      },
+      'domain-driven': {
+        'src': {
+          type: 'folder',
+          description: '源代码根目录',
+          children: {
+            'domains': {
+              type: 'folder',
+              description: '领域模块',
+              children: {
+                'user': {
+                  type: 'folder',
+                  description: '用户领域',
+                  children: {
+                    'entities': { type: 'folder', description: '实体' },
+                    'repositories': { type: 'folder', description: '仓储' },
+                    'services': { type: 'folder', description: '服务' },
+                    'components': { type: 'folder', description: '组件' }
+                  }
+                },
+                'product': {
+                  type: 'folder',
+                  description: '产品领域',
+                  children: {
+                    'entities': { type: 'folder', description: '实体' },
+                    'repositories': { type: 'folder', description: '仓储' },
+                    'services': { type: 'folder', description: '服务' },
+                    'components': { type: 'folder', description: '组件' }
+                  }
+                }
+              }
+            },
+            'shared': {
+              type: 'folder',
+              description: '共享层',
+              children: {
+                'infrastructure': { type: 'folder', description: '基础设施' },
+                'ui': { type: 'folder', description: 'UI组件' }
+              }
+            }
+          }
+        }
+      },
+      'layered': {
+        'src': {
+          type: 'folder',
+          description: '源代码根目录',
+          children: {
+            'presentation': {
+              type: 'folder',
+              description: '表示层',
+              children: {
+                'pages': { type: 'folder', description: '页面' },
+                'components': { type: 'folder', description: '组件' },
+                'layouts': { type: 'folder', description: '布局' }
+              }
+            },
+            'business': {
+              type: 'folder',
+              description: '业务层',
+              children: {
+                'services': { type: 'folder', description: '业务服务' },
+                'models': { type: 'folder', description: '业务模型' },
+                'rules': { type: 'folder', description: '业务规则' }
+              }
+            },
+            'data': {
+              type: 'folder',
+              description: '数据层',
+              children: {
+                'repositories': { type: 'folder', description: '数据仓储' },
+                'api': { type: 'folder', description: 'API接口' },
+                'store': { type: 'folder', description: '状态管理' }
+              }
+            },
+            'shared': {
+              type: 'folder',
+              description: '共享层',
+              children: {
+                'utils': { type: 'folder', description: '工具函数' },
+                'constants': { type: 'folder', description: '常量' },
+                'types': { type: 'folder', description: '类型定义' }
+              }
+            }
+          }
+        }
+      },
+      'event-driven': {
+        'src': {
+          type: 'folder',
+          description: '源代码根目录',
+          children: {
+            'events': {
+              type: 'folder',
+              description: '事件系统',
+              children: {
+                'bus': { type: 'folder', description: '事件总线' },
+                'handlers': { type: 'folder', description: '事件处理器' },
+                'types': { type: 'folder', description: '事件类型' }
+              }
+            },
+            'components': {
+              type: 'folder',
+              description: '响应式组件',
+              children: {
+                'reactive': { type: 'folder', description: '响应式组件' },
+                'observers': { type: 'folder', description: '观察者组件' }
+              }
+            },
+            'services': {
+              type: 'folder',
+              description: '服务层',
+              children: {
+                'publishers': { type: 'folder', description: '事件发布器' },
+                'subscribers': { type: 'folder', description: '事件订阅器' }
+              }
+            }
+          }
+        }
+      },
+      'plugin-based': {
+        'src': {
+          type: 'folder',
+          description: '源代码根目录',
+          children: {
+            'core': {
+              type: 'folder',
+              description: '核心系统',
+              children: {
+                'registry': { type: 'folder', description: '插件注册器' },
+                'hooks': { type: 'folder', description: '钩子系统' },
+                'api': { type: 'folder', description: '插件API' }
+              }
+            },
+            'plugins': {
+              type: 'folder',
+              description: '插件目录',
+              children: {
+                'auth-plugin': { type: 'folder', description: '认证插件' },
+                'ui-plugin': { type: 'folder', description: 'UI插件' }
+              }
+            },
+            'extensions': {
+              type: 'folder',
+              description: '扩展功能',
+              children: {
+                'middleware': { type: 'folder', description: '中间件' },
+                'decorators': { type: 'folder', description: '装饰器' }
+              }
+            }
+          }
+        }
       }
     };
 
@@ -305,7 +666,9 @@ export class Generator {
 
   private generateComponentHierarchy(session: WizardSession): ComponentHierarchy {
     const { projectType, features } = session.requirements;
+    const pattern = this.determineArchitecturePattern(session);
     
+    // 生成基础组件层次
     const hierarchy: ComponentHierarchy = {
       pages: this.generatePageComponents(projectType, features),
       layouts: this.generateLayoutComponents(projectType),
@@ -313,6 +676,24 @@ export class Generator {
       common: this.generateCommonComponents(projectType),
       base: this.generateBaseComponents(),
     };
+
+    // 添加架构模式特定的组件
+    const archSpecificComponents = this.generateArchitectureSpecificComponents(session, pattern);
+    archSpecificComponents.forEach(component => {
+      switch (component.type) {
+        case 'layout':
+          hierarchy.layouts.push(component);
+          break;
+        case 'business':
+          hierarchy.business.push(component);
+          break;
+        case 'base':
+          hierarchy.base.push(component);
+          break;
+        default:
+          hierarchy.common.push(component);
+      }
+    });
 
     return hierarchy;
   }
@@ -955,7 +1336,333 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}`
+}`,
+
+      // 微前端模板
+      'micro-frontend-shell': `import React from 'react';
+import { loadMicroApp } from '@micro-zoe/micro-app';
+
+interface ModuleConfig {
+  name: string;
+  url: string;
+  container: string;
+}
+
+export const MicroFrontendShell: React.FC = () => {
+  const modules: ModuleConfig[] = [
+    { name: 'auth-module', url: '/auth', container: '#auth-container' },
+    { name: 'dashboard-module', url: '/dashboard', container: '#dashboard-container' }
+  ];
+
+  React.useEffect(() => {
+    modules.forEach(module => {
+      loadMicroApp({
+        name: module.name,
+        url: module.url,
+        container: module.container,
+      });
+    });
+  }, []);
+
+  return (
+    <div className="micro-frontend-shell">
+      <div id="auth-container"></div>
+      <div id="dashboard-container"></div>
+    </div>
+  );
+};`,
+
+      // 领域驱动模板
+      'domain-entity': `export interface {{name}}Entity {
+  id: string;
+  {{#each properties}}
+  {{name}}: {{type}};
+  {{/each}}
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class {{name}} {
+  constructor(private props: {{name}}Entity) {}
+
+  get id(): string {
+    return this.props.id;
+  }
+
+  {{#each properties}}
+  get {{name}}(): {{type}} {
+    return this.props.{{name}};
+  }
+  {{/each}}
+
+  // 领域业务逻辑方法
+  validate(): boolean {
+    // 实现验证逻辑
+    return true;
+  }
+}`,
+
+      'domain-repository': `import { {{name}} } from '../entities/{{name}}.js';
+
+export interface {{name}}Repository {
+  findById(id: string): Promise<{{name}} | null>;
+  findAll(): Promise<{{name}}[]>;
+  save(entity: {{name}}): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+export class {{name}}RepositoryImpl implements {{name}}Repository {
+  async findById(id: string): Promise<{{name}} | null> {
+    // 实现查询逻辑
+    throw new Error('Not implemented');
+  }
+
+  async findAll(): Promise<{{name}}[]> {
+    // 实现查询逻辑
+    throw new Error('Not implemented');
+  }
+
+  async save(entity: {{name}}): Promise<void> {
+    // 实现保存逻辑
+    throw new Error('Not implemented');
+  }
+
+  async delete(id: string): Promise<void> {
+    // 实现删除逻辑
+    throw new Error('Not implemented');
+  }
+}`,
+
+      // 事件驱动模板
+      'event-bus': `type EventCallback<T = any> = (data: T) => void;
+
+export class EventBus {
+  private events: Map<string, EventCallback[]> = new Map();
+
+  on<T = any>(event: string, callback: EventCallback<T>): void {
+    if (!this.events.has(event)) {
+      this.events.set(event, []);
+    }
+    this.events.get(event)!.push(callback);
+  }
+
+  off<T = any>(event: string, callback: EventCallback<T>): void {
+    const callbacks = this.events.get(event);
+    if (callbacks) {
+      const index = callbacks.indexOf(callback);
+      if (index > -1) {
+        callbacks.splice(index, 1);
+      }
+    }
+  }
+
+  emit<T = any>(event: string, data?: T): void {
+    const callbacks = this.events.get(event);
+    if (callbacks) {
+      callbacks.forEach(callback => callback(data));
+    }
+  }
+
+  clear(): void {
+    this.events.clear();
+  }
+}
+
+export const eventBus = new EventBus();`,
+
+      'reactive-component': `import React, { useState, useEffect } from 'react';
+import { eventBus } from '../events/EventBus.js';
+
+interface {{name}}Props {
+  eventName: string;
+  {{#each props}}
+  {{name}}{{#unless required}}?{{/unless}}: {{type}};
+  {{/each}}
+}
+
+export const {{name}}: React.FC<{{name}}Props> = ({ eventName, ...props }) => {
+  const [state, setState] = useState<any>(null);
+
+  useEffect(() => {
+    const handleEvent = (data: any) => {
+      setState(data);
+    };
+
+    eventBus.on(eventName, handleEvent);
+    
+    return () => {
+      eventBus.off(eventName, handleEvent);
+    };
+  }, [eventName]);
+
+  return (
+    <div className="reactive-component">
+      {/* 响应式内容 */}
+      {state && <div>{JSON.stringify(state)}</div>}
+    </div>
+  );
+};`,
+
+      // 插件化架构模板
+      'plugin-registry': `export interface Plugin {
+  name: string;
+  version: string;
+  activate(): Promise<void>;
+  deactivate(): Promise<void>;
+}
+
+export interface PluginHooks {
+  [hookName: string]: Function[];
+}
+
+export class PluginRegistry {
+  private plugins: Map<string, Plugin> = new Map();
+  private hooks: PluginHooks = {};
+
+  async register(plugin: Plugin): Promise<void> {
+    if (this.plugins.has(plugin.name)) {
+      throw new Error(\`Plugin \${plugin.name} is already registered\`);
+    }
+
+    await plugin.activate();
+    this.plugins.set(plugin.name, plugin);
+  }
+
+  async unregister(pluginName: string): Promise<void> {
+    const plugin = this.plugins.get(pluginName);
+    if (!plugin) {
+      throw new Error(\`Plugin \${pluginName} not found\`);
+    }
+
+    await plugin.deactivate();
+    this.plugins.delete(pluginName);
+  }
+
+  addHook(hookName: string, handler: Function): void {
+    if (!this.hooks[hookName]) {
+      this.hooks[hookName] = [];
+    }
+    this.hooks[hookName].push(handler);
+  }
+
+  async executeHook(hookName: string, ...args: any[]): Promise<any[]> {
+    const handlers = this.hooks[hookName] || [];
+    return Promise.all(handlers.map(handler => handler(...args)));
+  }
+}
+
+export const pluginRegistry = new PluginRegistry();`,
+
+      // 配置文件模板
+      'vite-config': `import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+  server: {
+    port: 3000,
+    open: true,
+  },
+});`,
+
+      'eslint-config': `{
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": ["react-refresh"],
+  "rules": {
+    "react-refresh/only-export-components": [
+      "warn",
+      { "allowConstantExport": true }
+    ]
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}`,
+
+      'prettier-config': `{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false
+}`,
+
+      'tailwind-config': `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}`,
+
+      'css-variables': `/* CSS Variables for {{projectType}} project */
+:root {
+  /* Colors */
+  --primary-color: #3b82f6;
+  --secondary-color: #64748b;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Typography */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+}`,
+
+      'component-test': `import { render, screen } from '@testing-library/react';
+import { {{name}} } from './index';
+
+describe('{{name}}', () => {
+  test('renders correctly', () => {
+    render(<{{name}} {{#each props}}{{name}}={{#if (eq type 'string')}}"test"{{else}}true{{/if}} {{/each}}/>);
+    
+    // Add your test assertions here
+    expect(screen.getByText('{{description}}')).toBeInTheDocument();
+  });
+
+  {{#each props}}
+  test('handles {{name}} prop correctly', () => {
+    // Add specific prop tests
+  });
+  {{/each}}
+});`
     };
 
     // 加载内置模板
