@@ -1,6 +1,7 @@
 /**
  * 外部工具集成器 - 负责调用外部MCP工具获取实时信息
  * 支持Context7、Exa AI、DeepWiki等外部工具的集成和编排
+ * 集成缓存机制和性能监控，优化外部工具调用性能
  */
 
 import { 
@@ -8,10 +9,14 @@ import {
   ExternalToolCall,
   ToolResult 
 } from '../types/index.js';
+import { CacheManager } from '../cache/CacheManager.js';
+import { PerformanceMonitor } from '../performance/PerformanceMonitor.js';
 
 export class ExternalToolsIntegrator {
   private config: ExternalToolConfig;
   private callHistory: ExternalToolCall[] = [];
+  private cacheManager: CacheManager;
+  private performanceMonitor: PerformanceMonitor;
 
   constructor() {
     this.config = {
@@ -36,14 +41,56 @@ export class ExternalToolsIntegrator {
         usage: '生成标准化的架构规范文档',
       },
     };
+
+    // 初始化缓存和性能监控
+    this.cacheManager = new CacheManager({
+      maxMemoryEntries: 500,
+      defaultTTL: 30 * 60 * 1000, // 30分钟
+      persistentCachePath: '.wizard/cache/external-tools/',
+      enablePersistentCache: true,
+    });
+
+    this.performanceMonitor = new PerformanceMonitor({
+      enableProfiling: true,
+      slowOperationThreshold: 2000, // 2秒
+      alertThresholds: {
+        slowOperation: 5000, // 5秒
+        memoryUsage: 50 * 1024 * 1024, // 50MB
+        cpuUsage: 70,
+      },
+      persistMetrics: true,
+      metricsPath: '.wizard/metrics/external-tools/',
+    });
   }
 
   /**
    * 获取技术栈最佳实践
    * 结合Context7和Exa搜索获取全面信息
+   * 集成缓存和性能监控优化
    */
   async getBestPractices(tech: string): Promise<ToolResult> {
+    const cacheKey = 'best-practices';
+    const profileId = this.performanceMonitor.startProfile(`getBestPractices-${tech}`, {
+      tech,
+      tags: ['external-tools', 'best-practices']
+    });
+
     try {
+      // 尝试从缓存获取
+      const cached = await this.cacheManager.get('external-tools', cacheKey, { tech });
+      if (cached) {
+        this.performanceMonitor.endProfile(profileId);
+        return {
+          ...cached,
+          metadata: {
+            ...cached.metadata,
+            fromCache: true,
+            cachedAt: cached.metadata?.timestamp,
+            timestamp: new Date().toISOString(),
+          }
+        };
+      }
+
       const results = await Promise.allSettled([
         this.callContext7('get-library-docs', { library: tech }),
         this.callExa('web_search_exa', { 
@@ -57,7 +104,7 @@ export class ExternalToolsIntegrator {
 
       const aggregatedResult = this.aggregateResults([docs, practices]);
 
-      return {
+      const result = {
         success: true,
         data: {
           technology: tech,
@@ -68,9 +115,21 @@ export class ExternalToolsIntegrator {
         metadata: {
           sources: ['context7', 'exa'],
           timestamp: new Date().toISOString(),
+          fromCache: false,
         },
       };
+
+      // 缓存结果
+      await this.cacheManager.set('external-tools', cacheKey, result, {
+        ttl: 60 * 60 * 1000, // 1小时
+        tags: ['tech-docs', tech],
+        params: { tech }
+      });
+
+      this.performanceMonitor.endProfile(profileId);
+      return result;
     } catch (error) {
+      this.performanceMonitor.endProfile(profileId);
       return {
         success: false,
         error: error instanceof Error ? error.message : '获取最佳实践失败',
@@ -1099,5 +1158,88 @@ export class ExternalToolsIntegrator {
         ],
       },
     };
+  }
+
+  // =============================================================================
+  // 缓存和性能监控管理方法
+  // =============================================================================
+
+  /**
+   * 清理缓存
+   */
+  async clearCache(tags?: string[]): Promise<void> {
+    if (tags) {
+      await this.cacheManager.deleteByTags(tags);
+    } else {
+      await this.cacheManager.clear();
+    }
+  }
+
+  /**
+   * 获取缓存统计信息
+   */
+  async getCacheStats() {
+    return await this.cacheManager.getStats();
+  }
+
+  /**
+   * 预热缓存 - 预加载常用技术文档
+   */
+  async warmupCache(): Promise<void> {
+    const commonTechs = ['react', 'typescript', 'next.js', 'tailwindcss'];
+    
+    const warmupTasks = commonTechs.map(tech => ({
+      namespace: 'external-tools',
+      key: 'best-practices',
+      params: { tech },
+      loader: () => this.getBestPractices(tech),
+      ttl: 60 * 60 * 1000, // 1小时
+    }));
+
+    await this.cacheManager.warmup(warmupTasks);
+  }
+
+  /**
+   * 获取性能统计信息
+   */
+  getPerformanceStats() {
+    return this.performanceMonitor.getStats();
+  }
+
+  /**
+   * 获取性能警告
+   */
+  getPerformanceAlerts(severity?: 'low' | 'medium' | 'high' | 'critical') {
+    return this.performanceMonitor.getAlerts(severity);
+  }
+
+  /**
+   * 生成性能报告
+   */
+  generatePerformanceReport() {
+    return this.performanceMonitor.generateReport();
+  }
+
+  /**
+   * 清除性能警告
+   */
+  clearPerformanceAlerts(): void {
+    this.performanceMonitor.clearAlerts();
+  }
+
+  /**
+   * 启用/禁用性能分析
+   */
+  setProfilingEnabled(enabled: boolean): void {
+    this.performanceMonitor.setProfilingEnabled(enabled);
+  }
+
+  /**
+   * 析构函数 - 清理资源
+   */
+  async dispose(): Promise<void> {
+    await this.cacheManager.dispose();
+    await this.performanceMonitor.dispose();
+    console.log('外部工具集成器已释放资源');
   }
 }

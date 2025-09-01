@@ -56,7 +56,10 @@ export class Generator {
         id: `arch_${session.id}_${Date.now()}`,
         name: `${session.projectName} Architecture`,
         pattern,
-        structure,
+        structure: {
+          ...structure,
+          layers: this.extractLayersFromPattern(pattern) // 确保layers字段存在
+        },
         components,
         dependencies: this.generateDependencyGraph(components),
         technologies,
@@ -1266,6 +1269,29 @@ export const {{name}}: React.FC<{{name}}Props> = ({
     </div>
   );
 };`,
+
+      'tsx-component': `import React from 'react';
+
+interface {{componentName}}Props {
+{{#each props}}
+  {{name}}{{#unless required}}?{{/unless}}: {{type}};
+{{/each}}
+}
+
+const {{componentName}}: React.FC<{{componentName}}Props> = ({
+{{#each props}}
+  {{name}},
+{{/each}}
+}) => {
+  return (
+    <div>
+      <h1>{{componentName}}</h1>
+      {/* Component content */}
+    </div>
+  );
+};
+
+export default {{componentName}};`,
       
       'package-json': `{
   "name": "{{kebabCase projectName}}",
@@ -1715,6 +1741,20 @@ ${comp.usage}
 ${comp.examples.join('\n')}
 \`\`\`
 `).join('\n')}`;
+  }
+
+  private extractLayersFromPattern(pattern: string): string[] {
+    const layerMappings: Record<string, string[]> = {
+      'modular': ['pages', 'business', 'common', 'base'],
+      'feature-based': ['features', 'shared', 'core'],
+      'layered': ['presentation', 'application', 'domain', 'infrastructure'],
+      'micro-frontend': ['shell', 'modules', 'shared'],
+      'domain-driven': ['presentation', 'application', 'domain', 'infrastructure'],
+      'event-driven': ['handlers', 'publishers', 'subscribers', 'shared'],
+      'plugin-based': ['core', 'plugins', 'extensions'],
+    };
+    
+    return layerMappings[pattern] || layerMappings['modular'];
   }
 
   private countComponents(hierarchy: ComponentHierarchy): number {

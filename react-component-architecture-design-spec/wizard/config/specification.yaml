@@ -1,0 +1,265 @@
+version: "1.0.0"
+compatibility:
+  minWizardVersion: "1.0.0"
+  maxWizardVersion: "2.0.0"
+
+patterns:
+  - name: "modular"
+    displayName: "模块化架构"
+    description: "适合小到中型团队，组件按功能模块组织"
+    suitableFor:
+      teamSize:
+        min: 1
+        max: 10
+      complexity: "medium"
+      projectTypes:
+        - "spa"
+        - "dashboard"
+        - "cms"
+        - "task_management"
+    structure:
+      layers:
+        - "pages"
+        - "business"
+        - "common"
+        - "base"
+      dependencies:
+        - from: "pages"
+          to: "business"
+          allowed: true
+        - from: "pages"
+          to: "common"
+          allowed: true
+        - from: "business"
+          to: "common"
+          allowed: true
+        - from: "business"
+          to: "base"
+          allowed: true
+        - from: "common"
+          to: "base"
+          allowed: true
+        - from: "base"
+          to: "pages"
+          allowed: false
+          reason: "基础层不应依赖页面层"
+    templates:
+      - "modular-component"
+      - "modular-page"
+      - "modular-service"
+
+  - name: "feature-based"
+    displayName: "功能域架构"
+    description: "适合中型团队，按业务功能域划分"
+    suitableFor:
+      teamSize:
+        min: 5
+        max: 15
+      complexity: "medium"
+      projectTypes:
+        - "ecommerce"
+        - "saas"
+        - "enterprise"
+    structure:
+      layers:
+        - "features"
+        - "shared"
+        - "core"
+      dependencies:
+        - from: "features"
+          to: "shared"
+          allowed: true
+        - from: "features"
+          to: "core"
+          allowed: true
+        - from: "shared"
+          to: "core"
+          allowed: true
+        - from: "core"
+          to: "features"
+          allowed: false
+          reason: "核心层不应依赖功能层"
+    templates:
+      - "feature-component"
+      - "feature-page"
+      - "feature-service"
+
+  - name: "layered"
+    displayName: "分层架构"
+    description: "适合大型团队，严格的分层结构"
+    suitableFor:
+      teamSize:
+        min: 10
+        max: 50
+      complexity: "high"
+      projectTypes:
+        - "enterprise"
+        - "platform"
+    structure:
+      layers:
+        - "presentation"
+        - "application"
+        - "domain"
+        - "infrastructure"
+      dependencies:
+        - from: "presentation"
+          to: "application"
+          allowed: true
+        - from: "application"
+          to: "domain"
+          allowed: true
+        - from: "application"
+          to: "infrastructure"
+          allowed: true
+        - from: "domain"
+          to: "infrastructure"
+          allowed: false
+          reason: "领域层不应依赖基础设施层"
+        - from: "infrastructure"
+          to: "presentation"
+          allowed: false
+          reason: "基础设施层不应依赖表示层"
+    templates:
+      - "layered-component"
+      - "layered-service"
+      - "layered-repository"
+
+layers:
+  - name: "pages"
+    description: "页面组件层"
+    purpose: "组织页面级组件，处理路由和页面状态"
+    conventions:
+      naming: "PascalCase + Page后缀"
+      location: "src/pages"
+      imports:
+        - "business/*"
+        - "common/*"
+      exports:
+        - "default"
+    allowedDependencies:
+      - "business"
+      - "common"
+      - "base"
+    restrictions:
+      - "不可被其他层直接导入"
+
+  - name: "business"
+    description: "业务组件层"
+    purpose: "业务逻辑组件，实现具体业务功能"
+    conventions:
+      naming: "PascalCase"
+      location: "src/components/business"
+      imports:
+        - "common/*"
+        - "base/*"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies:
+      - "common"
+      - "base"
+    restrictions:
+      - "不可循环依赖"
+
+  - name: "common"
+    description: "通用组件层"
+    purpose: "可复用的通用组件"
+    conventions:
+      naming: "PascalCase"
+      location: "src/components/common"
+      imports:
+        - "base/*"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies:
+      - "base"
+    restrictions:
+      - "不可包含业务逻辑"
+
+  - name: "base"
+    description: "基础组件层"
+    purpose: "最基础的UI组件，不依赖其他层"
+    conventions:
+      naming: "PascalCase"
+      location: "src/components/base"
+      imports:
+        - "react"
+        - "@/*"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies: []
+    restrictions:
+      - "不可依赖其他业务层"
+
+  - name: "features"
+    description: "功能模块层"
+    purpose: "按功能域组织的模块"
+    conventions:
+      naming: "camelCase目录，PascalCase组件"
+      location: "src/features"
+      imports:
+        - "shared/*"
+        - "core/*"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies:
+      - "shared"
+      - "core"
+    restrictions:
+      - "功能模块间不可直接依赖"
+
+  - name: "shared"
+    description: "共享代码层"
+    purpose: "跨功能模块的共享代码"
+    conventions:
+      naming: "camelCase目录，PascalCase组件"
+      location: "src/shared"
+      imports:
+        - "core/*"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies:
+      - "core"
+    restrictions:
+      - "不可包含特定业务逻辑"
+
+  - name: "core"
+    description: "核心层"
+    purpose: "应用核心功能和基础设施"
+    conventions:
+      naming: "camelCase目录，PascalCase类"
+      location: "src/core"
+      imports:
+        - "react"
+        - "外部库"
+      exports:
+        - "named"
+        - "default"
+    allowedDependencies: []
+    restrictions:
+      - "不可依赖业务层代码"
+
+conventions:
+  components:
+    files: "PascalCase.tsx"
+    classes: "PascalCase"
+    interfaces: "PascalCase + Props/State后缀"
+    props: "camelCase"
+  directories:
+    components: "camelCase"
+    pages: "kebab-case"
+    services: "camelCase"
+    types: "camelCase"
+  constants:
+    actions: "UPPER_SNAKE_CASE"
+    configs: "UPPER_SNAKE_CASE"
+
+validation:
+  architecture: []
+  components: []
+  dependencies: []
+  naming: []
