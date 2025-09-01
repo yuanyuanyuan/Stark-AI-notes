@@ -942,6 +942,922 @@ function MyComponent() {
 }
 ```
 
+## ☁️ 多云平台CI/CD支持
+
+### 1. AWS CodePipeline配置
+
+```yaml
+# aws/buildspec.yml
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Installing dependencies...
+      - npm install -g pnpm
+      - pnpm install --frozen-lockfile
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Running tests...
+      - pnpm test:unit
+      - pnpm test:integration
+      - echo Building the application...
+      - pnpm build
+      - echo Building Docker image...
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"app","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - dist/**/*
+    - k8s/**/*
+
+cache:
+  paths:
+    - node_modules/**/*
+    - .pnpm-store/**/*
+```
+
+#### AWS ECS部署配置
+
+```json
+// aws/task-definition.json
+{
+  "family": "app-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/myapp:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:region:account-id:secret:api-key"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/app",
+          "awslogs-region": "${AWS_DEFAULT_REGION}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
+```
+
+#### AWS CDK部署脚本
+
+```typescript
+// aws/cdk-deploy.ts
+import * as cdk from 'aws-cdk-lib';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as ecr from 'aws-cdk-lib/aws-ecr';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
+import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+
+export class AppStack extends cdk.Stack {
+  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    // ECR仓库
+    const repository = new ecr.Repository(this, 'AppRepository', {
+      repositoryName: 'myapp',
+      lifecycleRules: [{
+        maxImageCount: 10,
+      }],
+    });
+
+    // ECS集群
+    const cluster = new ecs.Cluster(this, 'AppCluster', {
+      clusterName: 'app-cluster',
+      containerInsights: true,
+    });
+
+    // Fargate服务
+    const fargateService = new ecs.FargateService(this, 'AppService', {
+      cluster,
+      taskDefinition: new ecs.FargateTaskDefinition(this, 'AppTaskDef', {
+        memoryLimitMiB: 1024,
+        cpu: 512,
+      }),
+      desiredCount: 3,
+      assignPublicIp: true,
+    });
+
+    // 应用负载均衡器
+    const alb = new elbv2.ApplicationLoadBalancer(this, 'AppALB', {
+      vpc: cluster.vpc,
+      internetFacing: true,
+    });
+
+    const listener = alb.addListener('AppListener', {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+    });
+
+    listener.addTargets('AppTargets', {
+      port: 80,
+      protocol: elbv2.ApplicationProtocol.HTTP,
+      targets: [fargateService],
+      healthCheck: {
+        path: '/health',
+        interval: cdk.Duration.seconds(30),
+      },
+    });
+
+    // 自动扩展
+    const scaling = fargateService.autoScaleTaskCount({
+      minCapacity: 2,
+      maxCapacity: 10,
+    });
+
+    scaling.scaleOnCpuUtilization('CpuScaling', {
+      targetUtilizationPercent: 70,
+    });
+
+    scaling.scaleOnMemoryUtilization('MemoryScaling', {
+      targetUtilizationPercent: 80,
+    });
+
+    // CodePipeline
+    const pipeline = new codepipeline.Pipeline(this, 'AppPipeline', {
+      pipelineName: 'app-pipeline',
+    });
+
+    // 构建项目
+    const buildProject = new codebuild.PipelineProject(this, 'AppBuild', {
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+        privileged: true,
+      },
+      environmentVariables: {
+        AWS_ACCOUNT_ID: { value: cdk.Aws.ACCOUNT_ID },
+        AWS_DEFAULT_REGION: { value: cdk.Aws.REGION },
+        IMAGE_REPO_NAME: { value: repository.repositoryName },
+        IMAGE_TAG: { value: 'latest' },
+      },
+    });
+
+    // 添加ECR权限
+    repository.grantPullPush(buildProject);
+  }
+}
+```
+
+### 2. Azure DevOps Pipeline配置
+
+```yaml
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - release/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: app-variables
+  - name: dockerRegistryServiceConnection
+    value: 'acr-connection'
+  - name: imageRepository
+    value: 'myapp'
+  - name: containerRegistry
+    value: 'myregistry.azurecr.io'
+  - name: dockerfilePath
+    value: '$(Build.SourcesDirectory)/Dockerfile'
+  - name: tag
+    value: '$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: Build
+        displayName: 'Build Job'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '18.x'
+            displayName: 'Install Node.js'
+
+          - script: |
+              npm install -g pnpm
+              pnpm install --frozen-lockfile
+            displayName: 'Install dependencies'
+
+          - script: pnpm lint
+            displayName: 'Lint code'
+
+          - script: pnpm test:unit --coverage
+            displayName: 'Run unit tests'
+
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/test-results.xml'
+            displayName: 'Publish test results'
+
+          - task: PublishCodeCoverageResults@1
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/*coverage.xml'
+            displayName: 'Publish code coverage'
+
+          - script: pnpm build
+            displayName: 'Build application'
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              repository: '$(imageRepository)'
+              command: 'buildAndPush'
+              Dockerfile: '$(dockerfilePath)'
+              tags: |
+                $(tag)
+                latest
+            displayName: 'Build and push Docker image'
+
+  - stage: DeployStaging
+    displayName: 'Deploy to Staging'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployToStaging
+        displayName: 'Deploy to AKS Staging'
+        environment: 'staging'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'aks-staging'
+                    namespace: 'staging'
+                    manifests: |
+                      $(Pipeline.Workspace)/k8s/deployment.yaml
+                      $(Pipeline.Workspace)/k8s/service.yaml
+                    containers: |
+                      $(containerRegistry)/$(imageRepository):$(tag)
+
+  - stage: DeployProduction
+    displayName: 'Deploy to Production'
+    dependsOn: DeployStaging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployToProduction
+        displayName: 'Deploy to AKS Production'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: KubernetesManifest@0
+                  inputs:
+                    action: 'deploy'
+                    kubernetesServiceConnection: 'aks-production'
+                    namespace: 'production'
+                    manifests: |
+                      $(Pipeline.Workspace)/k8s/deployment.yaml
+                      $(Pipeline.Workspace)/k8s/service.yaml
+                    containers: |
+                      $(containerRegistry)/$(imageRepository):$(tag)
+                    strategy: 'canary'
+                    percentage: 25
+```
+
+#### Azure Bicep部署模板
+
+```bicep
+// azure/main.bicep
+param location string = resourceGroup().location
+param appName string = 'myapp'
+param environment string = 'production'
+
+// Container Registry
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2021-09-01' = {
+  name: '${appName}registry'
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+}
+
+// App Service Plan
+resource appServicePlan 'Microsoft.Web/serverfarms@2021-02-01' = {
+  name: '${appName}-plan-${environment}'
+  location: location
+  kind: 'linux'
+  sku: {
+    name: 'P1v2'
+    tier: 'Premium'
+    size: 'P1v2'
+    family: 'Pv2'
+    capacity: 3
+  }
+  properties: {
+    reserved: true
+  }
+}
+
+// Web App for Containers
+resource webApp 'Microsoft.Web/sites@2021-02-01' = {
+  name: '${appName}-${environment}'
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      linuxFxVersion: 'DOCKER|${containerRegistry.name}.azurecr.io/${appName}:latest'
+      alwaysOn: true
+      minTlsVersion: '1.2'
+      http20Enabled: true
+      healthCheckPath: '/health'
+    }
+  }
+}
+
+// Application Insights
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${appName}-insights-${environment}'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    Request_Source: 'rest'
+  }
+}
+
+// Auto Scaling
+resource autoScale 'Microsoft.Insights/autoscalesettings@2021-05-01-preview' = {
+  name: '${appName}-autoscale'
+  location: location
+  properties: {
+    targetResourceUri: appServicePlan.id
+    enabled: true
+    profiles: [
+      {
+        name: 'Auto scale condition'
+        capacity: {
+          minimum: '2'
+          maximum: '10'
+          default: '3'
+        }
+        rules: [
+          {
+            metricTrigger: {
+              metricName: 'CpuPercentage'
+              metricResourceUri: appServicePlan.id
+              operator: 'GreaterThan'
+              statistic: 'Average'
+              threshold: 70
+              timeAggregation: 'Average'
+              timeGrain: 'PT1M'
+              timeWindow: 'PT5M'
+            }
+            scaleAction: {
+              direction: 'Increase'
+              type: 'ChangeCount'
+              value: '1'
+              cooldown: 'PT5M'
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 3. Google Cloud Build配置
+
+```yaml
+# cloudbuild.yaml
+steps:
+  # 安装依赖
+  - name: 'node:18'
+    entrypoint: 'npm'
+    args: ['install', '-g', 'pnpm']
+    id: 'install-pnpm'
+
+  - name: 'node:18'
+    entrypoint: 'pnpm'
+    args: ['install', '--frozen-lockfile']
+    id: 'install-deps'
+    waitFor: ['install-pnpm']
+
+  # 运行测试
+  - name: 'node:18'
+    entrypoint: 'pnpm'
+    args: ['test:unit']
+    id: 'unit-tests'
+    waitFor: ['install-deps']
+
+  - name: 'node:18'
+    entrypoint: 'pnpm'
+    args: ['test:integration']
+    id: 'integration-tests'
+    waitFor: ['install-deps']
+
+  # 构建应用
+  - name: 'node:18'
+    entrypoint: 'pnpm'
+    args: ['build']
+    env:
+      - 'NODE_ENV=production'
+    id: 'build-app'
+    waitFor: ['unit-tests', 'integration-tests']
+
+  # 构建Docker镜像
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/myapp:$COMMIT_SHA',
+      '-t', 'gcr.io/$PROJECT_ID/myapp:latest',
+      '.'
+    ]
+    id: 'build-image'
+    waitFor: ['build-app']
+
+  # 推送到Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/myapp']
+    id: 'push-image'
+    waitFor: ['build-image']
+
+  # 部署到Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'myapp',
+      '--image', 'gcr.io/$PROJECT_ID/myapp:$COMMIT_SHA',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--min-instances', '2',
+      '--max-instances', '10',
+      '--cpu', '2',
+      '--memory', '2Gi',
+      '--port', '80'
+    ]
+    id: 'deploy-cloud-run'
+    waitFor: ['push-image']
+
+  # 部署到GKE
+  - name: 'gcr.io/cloud-builders/kubectl'
+    args: [
+      'set', 'image',
+      'deployment/app',
+      'app=gcr.io/$PROJECT_ID/myapp:$COMMIT_SHA',
+      '-n', 'production'
+    ]
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=app-cluster'
+    id: 'deploy-gke'
+    waitFor: ['push-image']
+
+# 构建配置
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  
+timeout: '1200s'
+
+# 构建触发器
+trigger:
+  branch:
+    name: '^main$'
+  included_files:
+    - 'src/**'
+    - 'package.json'
+    - 'Dockerfile'
+```
+
+#### GCP Terraform配置
+
+```hcl
+# gcp/main.tf
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# Cloud Run服务
+resource "google_cloud_run_service" "app" {
+  name     = "myapp"
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/myapp:latest"
+        
+        resources {
+          limits = {
+            cpu    = "2000m"
+            memory = "2Gi"
+          }
+        }
+
+        env {
+          name  = "NODE_ENV"
+          value = "production"
+        }
+
+        ports {
+          container_port = 80
+        }
+      }
+
+      service_account_name = google_service_account.app.email
+    }
+
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/minScale" = "2"
+        "autoscaling.knative.dev/maxScale" = "100"
+        "run.googleapis.com/cpu-throttling" = "false"
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+}
+
+# GKE集群
+resource "google_container_cluster" "app_cluster" {
+  name     = "app-cluster"
+  location = var.region
+
+  initial_node_count = 3
+
+  node_config {
+    machine_type = "e2-standard-4"
+    
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+
+  # 自动扩展
+  cluster_autoscaling {
+    enabled = true
+    
+    resource_limits {
+      resource_type = "cpu"
+      minimum       = 4
+      maximum       = 32
+    }
+    
+    resource_limits {
+      resource_type = "memory"
+      minimum       = 16
+      maximum       = 128
+    }
+  }
+
+  # Workload Identity
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
+  }
+}
+
+# Cloud Load Balancing
+resource "google_compute_global_address" "app_ip" {
+  name = "app-ip"
+}
+
+resource "google_compute_global_forwarding_rule" "app_forwarding" {
+  name       = "app-forwarding-rule"
+  target     = google_compute_target_https_proxy.app_proxy.id
+  port_range = "443"
+  ip_address = google_compute_global_address.app_ip.address
+}
+
+# Cloud CDN
+resource "google_compute_backend_service" "app_backend" {
+  name = "app-backend"
+  
+  cdn_policy {
+    cache_mode = "CACHE_ALL_STATIC"
+    default_ttl = 3600
+    max_ttl     = 86400
+  }
+  
+  health_checks = [google_compute_health_check.app_health.id]
+}
+```
+
+### 4. 阿里云DevOps配置
+
+```yaml
+# aliyun/pipeline.yml
+version: '1.0'
+name: app-pipeline
+
+# 触发器
+triggers:
+  - type: push
+    branches:
+      - main
+      - develop
+      - release/*
+
+# 环境变量
+env:
+  REGION: cn-shanghai
+  REGISTRY: registry.cn-shanghai.aliyuncs.com
+  NAMESPACE: myapp
+  IMAGE_NAME: app
+
+# 阶段定义
+stages:
+  - name: build
+    jobs:
+      - name: build-and-test
+        runs-on: ubuntu-latest
+        steps:
+          - name: 检出代码
+            uses: checkout@v1
+            
+          - name: 设置Node环境
+            uses: setup-node@v1
+            with:
+              node-version: 18
+              
+          - name: 安装依赖
+            run: |
+              npm install -g pnpm
+              pnpm install --frozen-lockfile
+              
+          - name: 代码检查
+            run: |
+              pnpm lint
+              pnpm type-check
+              
+          - name: 运行测试
+            run: |
+              pnpm test:unit --coverage
+              pnpm test:integration
+              
+          - name: 构建应用
+            run: pnpm build
+            env:
+              NODE_ENV: production
+              
+          - name: 构建镜像
+            run: |
+              docker build -t $REGISTRY/$NAMESPACE/$IMAGE_NAME:$CI_COMMIT_SHA .
+              docker tag $REGISTRY/$NAMESPACE/$IMAGE_NAME:$CI_COMMIT_SHA $REGISTRY/$NAMESPACE/$IMAGE_NAME:latest
+              
+          - name: 推送镜像
+            run: |
+              echo $REGISTRY_PASSWORD | docker login $REGISTRY -u $REGISTRY_USERNAME --password-stdin
+              docker push $REGISTRY/$NAMESPACE/$IMAGE_NAME:$CI_COMMIT_SHA
+              docker push $REGISTRY/$NAMESPACE/$IMAGE_NAME:latest
+
+  - name: deploy-staging
+    jobs:
+      - name: deploy-to-ack
+        runs-on: ubuntu-latest
+        needs: [build]
+        if: branch == 'main'
+        steps:
+          - name: 配置kubectl
+            run: |
+              echo "$KUBE_CONFIG" | base64 -d > kubeconfig
+              export KUBECONFIG=$(pwd)/kubeconfig
+              
+          - name: 部署到ACK
+            run: |
+              kubectl set image deployment/app app=$REGISTRY/$NAMESPACE/$IMAGE_NAME:$CI_COMMIT_SHA -n staging
+              kubectl rollout status deployment/app -n staging
+              
+          - name: 健康检查
+            run: |
+              sleep 30
+              curl -f https://staging.example.com/health || exit 1
+
+  - name: deploy-production
+    jobs:
+      - name: deploy-to-production
+        runs-on: ubuntu-latest
+        needs: [deploy-staging]
+        if: branch == 'main'
+        when: manual
+        steps:
+          - name: 蓝绿部署
+            run: |
+              ./scripts/blue-green-deploy.sh $CI_COMMIT_SHA
+```
+
+#### 阿里云Serverless应用配置
+
+```yaml
+# aliyun/serverless.yml
+edition: 1.0.0
+name: myapp
+access: default
+
+services:
+  # 函数计算配置
+  app-api:
+    component: fc
+    props:
+      region: cn-shanghai
+      service:
+        name: app-service
+        description: 'Application API Service'
+      function:
+        name: app-function
+        runtime: nodejs18
+        codeUri: ./dist
+        handler: index.handler
+        memorySize: 1024
+        timeout: 60
+        environment:
+          NODE_ENV: production
+        
+  # API网关配置  
+  app-gateway:
+    component: apigateway
+    props:
+      region: cn-shanghai
+      apis:
+        - name: app-api
+          description: 'Application API'
+          requestConfig:
+            path: /*
+            method: ANY
+          serviceConfig:
+            servicePath: /*
+            serviceHttpMethod: ANY
+            serviceAddress: http://${services.app-api.props.function.name}.${services.app-api.props.region}.fc.aliyuncs.com
+            
+  # 对象存储配置
+  app-storage:
+    component: oss
+    props:
+      region: cn-shanghai
+      bucket: myapp-assets
+      acl: public-read
+      website:
+        index: index.html
+        error: error.html
+```
+
+#### 阿里云Terraform配置
+
+```hcl
+# aliyun/main.tf
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    alicloud = {
+      source  = "aliyun/alicloud"
+      version = "~> 1.200"
+    }
+  }
+}
+
+provider "alicloud" {
+  region = var.region
+}
+
+# ACK托管集群
+resource "alicloud_cs_managed_kubernetes" "app_cluster" {
+  name               = "app-cluster"
+  cluster_spec       = "ack.pro.small"
+  version            = "1.24.6-aliyun.1"
+  pod_vswitch_ids    = [alicloud_vswitch.app_vswitch.id]
+  service_cidr       = "172.16.0.0/16"
+  
+  addons {
+    name = "nginx-ingress-controller"
+  }
+  
+  addons {
+    name = "metrics-server"
+  }
+}
+
+# ECS实例组
+resource "alicloud_ess_scaling_group" "app_scaling" {
+  min_size           = 2
+  max_size           = 10
+  scaling_group_name = "app-scaling-group"
+  vswitch_ids        = [alicloud_vswitch.app_vswitch.id]
+  
+  multi_az_policy = "BALANCE"
+  
+  lifecycle {
+    ignore_changes = [min_size, max_size]
+  }
+}
+
+# SLB负载均衡
+resource "alicloud_slb_load_balancer" "app_slb" {
+  load_balancer_name = "app-slb"
+  address_type       = "internet"
+  load_balancer_spec = "slb.s2.small"
+  vswitch_id         = alicloud_vswitch.app_vswitch.id
+}
+
+# CDN加速
+resource "alicloud_cdn_domain_new" "app_cdn" {
+  domain_name = "cdn.example.com"
+  cdn_type    = "web"
+  scope       = "domestic"
+  
+  sources {
+    content  = alicloud_slb_load_balancer.app_slb.address
+    type     = "ipaddr"
+    priority = 20
+    port     = 80
+  }
+  
+  certificate_config {
+    server_certificate = var.ssl_certificate
+    private_key        = var.ssl_private_key
+  }
+}
+
+# RDS数据库
+resource "alicloud_db_instance" "app_db" {
+  engine               = "MySQL"
+  engine_version       = "8.0"
+  instance_type        = "mysql.n2.medium.2c"
+  instance_storage     = 100
+  instance_charge_type = "Postpaid"
+  
+  security_ips = [alicloud_vswitch.app_vswitch.cidr_block]
+  
+  parameters {
+    name  = "max_connections"
+    value = "1000"
+  }
+}
+```
+
 ## 🎯 部署检查清单
 
 ### 部署前检查
@@ -967,6 +1883,14 @@ function MyComponent() {
 - [ ] 用户反馈收集
 - [ ] 回滚计划就绪
 - [ ] 文档发布
+
+### 多云平台部署检查
+- [ ] AWS: ECR镜像推送成功，ECS/EKS部署正常
+- [ ] Azure: ACR镜像推送成功，AKS部署正常
+- [ ] GCP: GCR镜像推送成功，Cloud Run/GKE部署正常
+- [ ] 阿里云: ACR镜像推送成功，ACK/SAE部署正常
+- [ ] 跨云负载均衡配置
+- [ ] 多云监控集成
 
 ---
 

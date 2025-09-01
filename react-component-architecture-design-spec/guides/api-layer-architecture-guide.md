@@ -1045,18 +1045,672 @@ export class RateLimiter {
 }
 ```
 
+## 🔄 GraphQL订阅和实时通信
+
+### 1. GraphQL订阅实现
+
+```typescript
+// graphql/subscriptions.ts
+import { PubSub } from 'graphql-subscriptions';
+import { withFilter } from 'graphql-subscriptions';
+import { GraphQLSubscriptionType } from 'graphql';
+import { WebSocketServer } from 'ws';
+import { useServer } from 'graphql-ws/lib/use/ws';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+
+// 创建PubSub实例
+const pubsub = new PubSub();
+
+// 订阅事件常量
+const EVENTS = {
+  ORDER_CREATED: 'ORDER_CREATED',
+  ORDER_UPDATED: 'ORDER_UPDATED',
+  USER_STATUS_CHANGED: 'USER_STATUS_CHANGED',
+  MESSAGE_SENT: 'MESSAGE_SENT',
+  DATA_SYNCED: 'DATA_SYNCED',
+};
+
+// 订阅类型定义
+const SubscriptionType = new GraphQLObjectType({
+  name: 'Subscription',
+  fields: {
+    // 订单状态订阅
+    orderStatusChanged: {
+      type: OrderType,
+      args: {
+        orderId: { type: GraphQLString },
+        userId: { type: GraphQLString },
+      },
+      subscribe: withFilter(
+        () => pubsub.asyncIterator([EVENTS.ORDER_CREATED, EVENTS.ORDER_UPDATED]),
+        (payload, variables) => {
+          // 过滤逻辑：只推送相关用户的订单
+          if (variables.orderId) {
+            return payload.order.id === variables.orderId;
+          }
+          if (variables.userId) {
+            return payload.order.userId === variables.userId;
+          }
+          return true;
+        }
+      ),
+      resolve: (payload) => payload.order,
+    },
+
+    // 用户在线状态订阅
+    userStatusChanged: {
+      type: UserStatusType,
+      args: {
+        userIds: { type: GraphQLList(GraphQLString) },
+      },
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(EVENTS.USER_STATUS_CHANGED),
+        (payload, variables) => {
+          if (variables.userIds && variables.userIds.length > 0) {
+            return variables.userIds.includes(payload.userId);
+          }
+          return true;
+        }
+      ),
+    },
+
+    // 实时消息订阅
+    messageReceived: {
+      type: MessageType,
+      args: {
+        channelId: { type: GraphQLNonNull(GraphQLString) },
+      },
+      subscribe: withFilter(
+        () => pubsub.asyncIterator(EVENTS.MESSAGE_SENT),
+        (payload, variables) => {
+          return payload.message.channelId === variables.channelId;
+        }
+      ),
+    },
+
+    // 数据同步订阅
+    dataSync: {
+      type: DataSyncType,
+      args: {
+        entityType: { type: GraphQLString },
+        entityId: { type: GraphQLString },
+      },
+      subscribe: () => pubsub.asyncIterator(EVENTS.DATA_SYNCED),
+    },
+  },
+});
+
+// WebSocket服务器设置
+export function setupGraphQLSubscriptions(httpServer: any) {
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql',
+  });
+
+  const schema = makeExecutableSchema({
+    typeDefs,
+    resolvers,
+  });
+
+  const serverCleanup = useServer(
+    {
+      schema,
+      context: async (ctx, msg, args) => {
+        // 认证逻辑
+        const token = ctx.connectionParams?.authorization;
+        const user = await authenticateWebSocket(token);
+        
+        if (!user) {
+          throw new Error('Unauthorized');
+        }
+
+        return {
+          user,
+          pubsub,
+          dataSources: createDataSources(),
+        };
+      },
+      onConnect: async (ctx) => {
+        console.log('Client connected:', ctx.connectionParams);
+      },
+      onDisconnect: async (ctx, code, reason) => {
+        console.log('Client disconnected:', code, reason);
+      },
+      onSubscribe: async (ctx, msg) => {
+        // 订阅前的验证
+        const { operationName, query, variables } = msg.payload;
+        
+        // 检查订阅权限
+        if (!hasSubscriptionPermission(ctx.user, operationName)) {
+          throw new Error('Insufficient permissions for subscription');
+        }
+
+        // 记录订阅
+        logSubscription({
+          user: ctx.user,
+          operation: operationName,
+          variables,
+        });
+      },
+    },
+    wsServer
+  );
+
+  return serverCleanup;
+}
+
+// 发布事件辅助函数
+export class SubscriptionPublisher {
+  // 发布订单更新
+  static publishOrderUpdate(order: Order) {
+    pubsub.publish(EVENTS.ORDER_UPDATED, {
+      order,
+      timestamp: new Date(),
+    });
+  }
+
+  // 发布用户状态变化
+  static publishUserStatusChange(userId: string, status: string) {
+    pubsub.publish(EVENTS.USER_STATUS_CHANGED, {
+      userId,
+      status,
+      timestamp: new Date(),
+    });
+  }
+
+  // 发布消息
+  static publishMessage(message: Message) {
+    pubsub.publish(EVENTS.MESSAGE_SENT, {
+      message,
+      timestamp: new Date(),
+    });
+  }
+
+  // 批量发布
+  static publishBatch(events: Array<{ type: string; payload: any }>) {
+    events.forEach(({ type, payload }) => {
+      pubsub.publish(type, payload);
+    });
+  }
+}
+```
+
+### 2. 实时数据同步
+
+```typescript
+// realtime/data-sync.ts
+export class RealtimeDataSync {
+  private connections: Map<string, WebSocket> = new Map();
+  private subscriptions: Map<string, Set<string>> = new Map();
+  
+  // 客户端连接管理
+  handleConnection(ws: WebSocket, userId: string) {
+    this.connections.set(userId, ws);
+    
+    ws.on('message', (data) => {
+      const message = JSON.parse(data.toString());
+      this.handleMessage(userId, message);
+    });
+    
+    ws.on('close', () => {
+      this.handleDisconnection(userId);
+    });
+    
+    ws.on('error', (error) => {
+      console.error(`WebSocket error for user ${userId}:`, error);
+    });
+    
+    // 发送初始同步数据
+    this.sendInitialSync(userId);
+  }
+  
+  // 处理客户端消息
+  private handleMessage(userId: string, message: any) {
+    switch (message.type) {
+      case 'SUBSCRIBE':
+        this.handleSubscribe(userId, message.payload);
+        break;
+        
+      case 'UNSUBSCRIBE':
+        this.handleUnsubscribe(userId, message.payload);
+        break;
+        
+      case 'SYNC_REQUEST':
+        this.handleSyncRequest(userId, message.payload);
+        break;
+        
+      case 'OPTIMISTIC_UPDATE':
+        this.handleOptimisticUpdate(userId, message.payload);
+        break;
+        
+      default:
+        console.warn(`Unknown message type: ${message.type}`);
+    }
+  }
+  
+  // 数据变更推送
+  async pushDataChange(change: DataChange) {
+    const affectedUsers = await this.getAffectedUsers(change);
+    
+    for (const userId of affectedUsers) {
+      const ws = this.connections.get(userId);
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const payload = await this.prepareChangePayload(change, userId);
+        
+        ws.send(JSON.stringify({
+          type: 'DATA_CHANGE',
+          payload,
+          timestamp: Date.now(),
+        }));
+      }
+    }
+  }
+  
+  // 冲突解决
+  async resolveConflict(localChange: any, serverChange: any): Promise<any> {
+    // 基于时间戳的冲突解决
+    if (localChange.timestamp > serverChange.timestamp) {
+      return this.mergeChanges(serverChange, localChange);
+    }
+    
+    // 基于版本的冲突解决
+    if (localChange.version === serverChange.version) {
+      return this.mergeChanges(localChange, serverChange);
+    }
+    
+    // 自定义冲突解决策略
+    return this.customConflictResolution(localChange, serverChange);
+  }
+  
+  // 离线支持
+  async handleOfflineSync(userId: string, offlineChanges: any[]) {
+    const conflicts = [];
+    const successful = [];
+    
+    for (const change of offlineChanges) {
+      try {
+        const result = await this.applyOfflineChange(change);
+        successful.push(result);
+      } catch (error) {
+        if (error.type === 'CONFLICT') {
+          conflicts.push({
+            change,
+            error,
+            resolution: await this.suggestResolution(change, error),
+          });
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    return {
+      successful,
+      conflicts,
+      syncToken: this.generateSyncToken(userId),
+    };
+  }
+}
+```
+
+### 3. 服务器推送事件（SSE）
+
+```typescript
+// realtime/server-sent-events.ts
+export class ServerSentEvents {
+  private clients: Map<string, Response> = new Map();
+  
+  // SSE端点
+  setupSSE(app: Express) {
+    app.get('/api/events', this.authenticate, (req, res) => {
+      // 设置SSE响应头
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+      });
+      
+      const userId = req.user.id;
+      this.clients.set(userId, res);
+      
+      // 发送初始连接事件
+      this.sendEvent(userId, 'connected', {
+        message: 'Successfully connected to SSE',
+        timestamp: Date.now(),
+      });
+      
+      // 心跳保持连接
+      const heartbeat = setInterval(() => {
+        res.write(':heartbeat\n\n');
+      }, 30000);
+      
+      // 清理断开的连接
+      req.on('close', () => {
+        clearInterval(heartbeat);
+        this.clients.delete(userId);
+      });
+    });
+  }
+  
+  // 发送事件到客户端
+  sendEvent(userId: string, eventType: string, data: any) {
+    const client = this.clients.get(userId);
+    
+    if (client) {
+      const eventData = `event: ${eventType}\ndata: ${JSON.stringify(data)}\nid: ${Date.now()}\n\n`;
+      client.write(eventData);
+    }
+  }
+  
+  // 广播事件
+  broadcast(eventType: string, data: any, filter?: (userId: string) => boolean) {
+    this.clients.forEach((client, userId) => {
+      if (!filter || filter(userId)) {
+        this.sendEvent(userId, eventType, data);
+      }
+    });
+  }
+  
+  // 分组推送
+  sendToGroup(groupId: string, eventType: string, data: any) {
+    const groupMembers = this.getGroupMembers(groupId);
+    
+    groupMembers.forEach(userId => {
+      this.sendEvent(userId, eventType, data);
+    });
+  }
+}
+```
+
+### 4. WebSocket管理和优化
+
+```typescript
+// realtime/websocket-manager.ts
+export class WebSocketManager {
+  private wss: WebSocketServer;
+  private rooms: Map<string, Set<WebSocket>> = new Map();
+  private heartbeats: Map<WebSocket, NodeJS.Timeout> = new Map();
+  
+  constructor(server: any) {
+    this.wss = new WebSocketServer({ server });
+    this.setupWebSocketServer();
+  }
+  
+  private setupWebSocketServer() {
+    this.wss.on('connection', (ws: WebSocket, req: any) => {
+      // 认证
+      const token = this.extractToken(req);
+      const user = this.authenticateToken(token);
+      
+      if (!user) {
+        ws.close(1008, 'Unauthorized');
+        return;
+      }
+      
+      // 设置心跳
+      this.setupHeartbeat(ws);
+      
+      // 处理消息
+      ws.on('message', (data) => {
+        this.handleMessage(ws, data, user);
+      });
+      
+      // 处理断开
+      ws.on('close', () => {
+        this.handleDisconnect(ws, user);
+      });
+      
+      // 错误处理
+      ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+      });
+    });
+  }
+  
+  // 心跳机制
+  private setupHeartbeat(ws: WebSocket) {
+    const interval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      } else {
+        clearInterval(interval);
+      }
+    }, 30000);
+    
+    this.heartbeats.set(ws, interval);
+    
+    ws.on('pong', () => {
+      // 客户端响应，连接正常
+    });
+  }
+  
+  // 房间管理
+  joinRoom(ws: WebSocket, roomId: string) {
+    if (!this.rooms.has(roomId)) {
+      this.rooms.set(roomId, new Set());
+    }
+    
+    this.rooms.get(roomId)!.add(ws);
+    
+    // 通知房间其他成员
+    this.broadcastToRoom(roomId, {
+      type: 'USER_JOINED',
+      roomId,
+      timestamp: Date.now(),
+    }, ws);
+  }
+  
+  leaveRoom(ws: WebSocket, roomId: string) {
+    const room = this.rooms.get(roomId);
+    
+    if (room) {
+      room.delete(ws);
+      
+      if (room.size === 0) {
+        this.rooms.delete(roomId);
+      } else {
+        // 通知房间其他成员
+        this.broadcastToRoom(roomId, {
+          type: 'USER_LEFT',
+          roomId,
+          timestamp: Date.now(),
+        });
+      }
+    }
+  }
+  
+  // 广播消息到房间
+  broadcastToRoom(roomId: string, message: any, exclude?: WebSocket) {
+    const room = this.rooms.get(roomId);
+    
+    if (room) {
+      const data = JSON.stringify(message);
+      
+      room.forEach(ws => {
+        if (ws !== exclude && ws.readyState === WebSocket.OPEN) {
+          ws.send(data);
+        }
+      });
+    }
+  }
+  
+  // 消息队列和重试
+  private messageQueue: Map<string, any[]> = new Map();
+  
+  async sendWithRetry(ws: WebSocket, message: any, maxRetries = 3) {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(message));
+          return true;
+        } else {
+          // 加入队列等待重连
+          this.queueMessage(ws, message);
+          return false;
+        }
+      } catch (error) {
+        retries++;
+        await this.delay(Math.pow(2, retries) * 1000); // 指数退避
+      }
+    }
+    
+    return false;
+  }
+  
+  // 连接池管理
+  getConnectionStats() {
+    return {
+      totalConnections: this.wss.clients.size,
+      rooms: this.rooms.size,
+      roomStats: Array.from(this.rooms.entries()).map(([roomId, members]) => ({
+        roomId,
+        memberCount: members.size,
+      })),
+    };
+  }
+}
+```
+
+### 5. 实时协作功能
+
+```typescript
+// realtime/collaboration.ts
+export class RealtimeCollaboration {
+  private documents: Map<string, CollaborativeDocument> = new Map();
+  private cursors: Map<string, UserCursor> = new Map();
+  private selections: Map<string, UserSelection> = new Map();
+  
+  // 协作编辑
+  async handleOperation(docId: string, operation: Operation, userId: string) {
+    const doc = this.documents.get(docId);
+    
+    if (!doc) {
+      throw new Error('Document not found');
+    }
+    
+    // 操作转换（OT）
+    const transformedOp = await this.transformOperation(operation, doc.pendingOps);
+    
+    // 应用操作
+    doc.applyOperation(transformedOp);
+    
+    // 广播给其他用户
+    this.broadcastOperation(docId, transformedOp, userId);
+    
+    // 更新版本
+    doc.version++;
+    
+    // 保存到持久化存储
+    await this.saveDocument(doc);
+    
+    return {
+      success: true,
+      version: doc.version,
+      operation: transformedOp,
+    };
+  }
+  
+  // 光标同步
+  updateCursor(userId: string, docId: string, position: CursorPosition) {
+    this.cursors.set(`${userId}:${docId}`, {
+      userId,
+      docId,
+      position,
+      color: this.getUserColor(userId),
+      timestamp: Date.now(),
+    });
+    
+    // 广播光标位置
+    this.broadcastCursor(docId, userId, position);
+  }
+  
+  // 选区同步
+  updateSelection(userId: string, docId: string, selection: Selection) {
+    this.selections.set(`${userId}:${docId}`, {
+      userId,
+      docId,
+      selection,
+      color: this.getUserColor(userId),
+      timestamp: Date.now(),
+    });
+    
+    // 广播选区
+    this.broadcastSelection(docId, userId, selection);
+  }
+  
+  // 存在感（Presence）
+  updatePresence(userId: string, docId: string, status: PresenceStatus) {
+    const presence = {
+      userId,
+      docId,
+      status,
+      lastSeen: Date.now(),
+      cursor: this.cursors.get(`${userId}:${docId}`),
+      selection: this.selections.get(`${userId}:${docId}`),
+    };
+    
+    // 广播存在感
+    this.broadcastPresence(docId, presence);
+  }
+  
+  // 冲突解决 - CRDT实现
+  async mergeCRDT(localState: any, remoteState: any): Promise<any> {
+    const merged = {
+      ...localState,
+      ...remoteState,
+    };
+    
+    // 合并向量时钟
+    merged.vectorClock = this.mergeVectorClocks(
+      localState.vectorClock,
+      remoteState.vectorClock
+    );
+    
+    // 合并操作历史
+    merged.operations = this.mergeOperations(
+      localState.operations,
+      remoteState.operations
+    );
+    
+    return merged;
+  }
+}
+```
+
 ## 🎯 最佳实践检查清单
 
 ### API设计
 - [ ] RESTful规范遵循
+- [ ] GraphQL Schema设计合理
 - [ ] 统一的错误格式
 - [ ] 版本管理策略
 - [ ] 分页和过滤支持
 - [ ] 批量操作支持
 - [ ] 幂等性保证
 
+### 实时通信
+- [ ] WebSocket连接管理
+- [ ] 心跳机制实现
+- [ ] 断线重连策略
+- [ ] 消息队列和重试
+- [ ] 房间/频道管理
+- [ ] 广播优化
+
+### GraphQL订阅
+- [ ] 订阅权限控制
+- [ ] 过滤器优化
+- [ ] 订阅生命周期管理
+- [ ] 错误处理机制
+- [ ] 性能监控
+- [ ] 内存泄漏防护
+
 ### 性能优化
 - [ ] 响应时间 < 200ms (p95)
+- [ ] WebSocket连接复用
 - [ ] 数据压缩启用
 - [ ] 缓存策略实施
 - [ ] N+1查询解决
@@ -1064,12 +1718,13 @@ export class RateLimiter {
 - [ ] 异步处理
 
 ### 安全防护
-- [ ] HTTPS强制
+- [ ] HTTPS/WSS强制
 - [ ] 认证机制完善
 - [ ] 授权检查严格
 - [ ] 速率限制配置
 - [ ] 输入验证完整
 - [ ] SQL注入防护
+- [ ] WebSocket认证
 
 ### 监控告警
 - [ ] 性能指标监控
@@ -1078,6 +1733,7 @@ export class RateLimiter {
 - [ ] 日志记录完整
 - [ ] 告警规则设置
 - [ ] 调用链追踪
+- [ ] 实时连接监控
 
 ---
 

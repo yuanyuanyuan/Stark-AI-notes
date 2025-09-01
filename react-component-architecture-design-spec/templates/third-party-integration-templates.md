@@ -1211,6 +1211,548 @@ ServiceFactory.register('payment', () => {
 - [ ] 依赖版本锁定
 - [ ] 变更日志记录
 
+## 📊 监控和分析服务
+
+### 1. Google Analytics 4集成
+
+```typescript
+// services/analytics/google-analytics.ts
+import { gtag } from '@/lib/gtag';
+
+export class GoogleAnalyticsService {
+  private initialized = false;
+
+  initialize(measurementId: string) {
+    if (this.initialized) return;
+
+    // 加载gtag脚本
+    const script = document.createElement('script');
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+    script.async = true;
+    document.head.appendChild(script);
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() {
+      window.dataLayer.push(arguments);
+    };
+    
+    gtag('js', new Date());
+    gtag('config', measurementId, {
+      page_path: window.location.pathname,
+    });
+
+    this.initialized = true;
+  }
+
+  // 页面浏览跟踪
+  trackPageView(path: string, title?: string) {
+    gtag('event', 'page_view', {
+      page_path: path,
+      page_title: title || document.title,
+      page_location: window.location.href,
+    });
+  }
+
+  // 事件跟踪
+  trackEvent(action: string, category: string, label?: string, value?: number) {
+    gtag('event', action, {
+      event_category: category,
+      event_label: label,
+      value: value,
+    });
+  }
+
+  // 电商跟踪
+  trackPurchase(transactionData: {
+    transactionId: string;
+    value: number;
+    currency: string;
+    items: Array<{
+      id: string;
+      name: string;
+      category: string;
+      quantity: number;
+      price: number;
+    }>;
+  }) {
+    gtag('event', 'purchase', {
+      transaction_id: transactionData.transactionId,
+      value: transactionData.value,
+      currency: transactionData.currency,
+      items: transactionData.items,
+    });
+  }
+
+  // 用户属性设置
+  setUserProperties(properties: Record<string, any>) {
+    gtag('set', 'user_properties', properties);
+  }
+}
+
+// React Hook
+export function useAnalytics() {
+  const analytics = useMemo(() => new GoogleAnalyticsService(), []);
+  const location = useLocation();
+
+  useEffect(() => {
+    analytics.initialize(process.env.REACT_APP_GA_MEASUREMENT_ID!);
+  }, []);
+
+  useEffect(() => {
+    analytics.trackPageView(location.pathname);
+  }, [location]);
+
+  return analytics;
+}
+```
+
+### 2. Mixpanel产品分析集成
+
+```typescript
+// services/analytics/mixpanel.ts
+import mixpanel from 'mixpanel-browser';
+
+export class MixpanelService {
+  initialize(token: string) {
+    mixpanel.init(token, {
+      debug: process.env.NODE_ENV === 'development',
+      track_pageview: true,
+      persistence: 'localStorage',
+    });
+  }
+
+  // 识别用户
+  identify(userId: string, traits?: Record<string, any>) {
+    mixpanel.identify(userId);
+    if (traits) {
+      mixpanel.people.set(traits);
+    }
+  }
+
+  // 跟踪事件
+  track(event: string, properties?: Record<string, any>) {
+    mixpanel.track(event, {
+      ...properties,
+      timestamp: Date.now(),
+    });
+  }
+
+  // 设置用户属性
+  setPeople(properties: Record<string, any>) {
+    mixpanel.people.set(properties);
+  }
+
+  // 增加数值属性
+  increment(property: string, value: number = 1) {
+    mixpanel.people.increment(property, value);
+  }
+
+  // 跟踪收入
+  trackRevenue(amount: number, properties?: Record<string, any>) {
+    mixpanel.people.track_charge(amount, properties);
+  }
+
+  // 创建别名
+  alias(alias: string) {
+    mixpanel.alias(alias);
+  }
+
+  // 重置用户
+  reset() {
+    mixpanel.reset();
+  }
+}
+```
+
+## 🗺️ 地图服务集成
+
+### 1. 高德地图集成
+
+```typescript
+// services/map/amap.ts
+export class AMapService {
+  private map: any;
+  private AMap: any;
+
+  async initialize(container: HTMLElement, options?: any) {
+    // 加载高德地图SDK
+    await this.loadScript();
+    
+    this.AMap = (window as any).AMap;
+    
+    this.map = new this.AMap.Map(container, {
+      zoom: options?.zoom || 11,
+      center: options?.center || [116.397428, 39.90923],
+      viewMode: '3D',
+      ...options,
+    });
+
+    // 添加控件
+    this.map.addControl(new this.AMap.Scale());
+    this.map.addControl(new this.AMap.ToolBar());
+  }
+
+  private loadScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if ((window as any).AMap) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${process.env.REACT_APP_AMAP_KEY}`;
+      script.onload = () => resolve();
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // 添加标记
+  addMarker(position: [number, number], options?: any) {
+    const marker = new this.AMap.Marker({
+      position,
+      map: this.map,
+      ...options,
+    });
+    return marker;
+  }
+
+  // 路径规划
+  async routePlanning(start: [number, number], end: [number, number]) {
+    return new Promise((resolve, reject) => {
+      this.AMap.plugin('AMap.Driving', () => {
+        const driving = new this.AMap.Driving({
+          map: this.map,
+          panel: 'panel',
+        });
+
+        driving.search(start, end, (status: string, result: any) => {
+          if (status === 'complete') {
+            resolve(result);
+          } else {
+            reject(new Error('路径规划失败'));
+          }
+        });
+      });
+    });
+  }
+
+  // 地理编码
+  async geocode(address: string): Promise<[number, number]> {
+    return new Promise((resolve, reject) => {
+      this.AMap.plugin('AMap.Geocoder', () => {
+        const geocoder = new this.AMap.Geocoder();
+        
+        geocoder.getLocation(address, (status: string, result: any) => {
+          if (status === 'complete' && result.info === 'OK') {
+            const location = result.geocodes[0].location;
+            resolve([location.lng, location.lat]);
+          } else {
+            reject(new Error('地理编码失败'));
+          }
+        });
+      });
+    });
+  }
+}
+```
+
+## 🤖 AI服务集成
+
+### 1. OpenAI GPT集成
+
+```typescript
+// services/ai/openai.ts
+export class OpenAIService {
+  private apiKey: string;
+  private baseURL: string;
+
+  constructor(apiKey: string, baseURL?: string) {
+    this.apiKey = apiKey;
+    this.baseURL = baseURL || 'https://api.openai.com/v1';
+  }
+
+  // 文本生成
+  async generateText(prompt: string, options?: {
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+  }) {
+    const response = await fetch(`${this.baseURL}/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: options?.model || 'gpt-3.5-turbo-instruct',
+        prompt,
+        max_tokens: options?.maxTokens || 150,
+        temperature: options?.temperature || 0.7,
+      }),
+    });
+
+    const data = await response.json();
+    return data.choices[0].text?.trim();
+  }
+
+  // 聊天对话
+  async chat(messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>) {
+    const response = await fetch(`${this.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await response.json();
+    return data.choices[0].message?.content;
+  }
+
+  // 图像生成
+  async generateImage(prompt: string, options?: {
+    n?: number;
+    size?: '256x256' | '512x512' | '1024x1024';
+  }) {
+    const response = await fetch(`${this.baseURL}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt,
+        n: options?.n || 1,
+        size: options?.size || '512x512',
+      }),
+    });
+
+    const data = await response.json();
+    return data.data;
+  }
+}
+```
+
+## 💬 实时通信服务
+
+### 1. Socket.io实时通信
+
+```typescript
+// services/realtime/socket-io.ts
+import { io, Socket } from 'socket.io-client';
+
+export class SocketIOService {
+  private socket: Socket | null = null;
+  private eventHandlers: Map<string, Set<Function>> = new Map();
+
+  connect(url: string, options?: any) {
+    if (this.socket?.connected) return;
+
+    this.socket = io(url, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      ...options,
+    });
+
+    this.socket.on('connect', () => {
+      console.log('Socket connected:', this.socket?.id);
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+    });
+  }
+
+  // 发送消息
+  send(event: string, data: any) {
+    this.socket?.emit(event, data);
+  }
+
+  // 监听事件
+  on(event: string, handler: Function) {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+      
+      this.socket?.on(event, (...args) => {
+        this.eventHandlers.get(event)?.forEach(handler => handler(...args));
+      });
+    }
+    
+    this.eventHandlers.get(event)?.add(handler);
+  }
+
+  // 发送带确认的消息
+  sendWithAck(event: string, data: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Request timeout'));
+      }, 5000);
+
+      this.socket?.emit(event, data, (response: any) => {
+        clearTimeout(timeout);
+        resolve(response);
+      });
+    });
+  }
+
+  disconnect() {
+    this.socket?.disconnect();
+    this.socket = null;
+  }
+}
+```
+
+### 2. WebRTC视频通话集成
+
+```typescript
+// services/webrtc/video-call.ts
+export class WebRTCService {
+  private localStream: MediaStream | null = null;
+  private peerConnection: RTCPeerConnection | null = null;
+
+  // 初始化本地媒体流
+  async initializeMedia(constraints?: MediaStreamConstraints) {
+    this.localStream = await navigator.mediaDevices.getUserMedia(
+      constraints || {
+        video: { width: 1280, height: 720 },
+        audio: true,
+      }
+    );
+    return this.localStream;
+  }
+
+  // 创建点对点连接
+  createPeerConnection(configuration?: RTCConfiguration) {
+    this.peerConnection = new RTCPeerConnection(
+      configuration || {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+        ],
+      }
+    );
+
+    // 添加本地流
+    this.localStream?.getTracks().forEach(track => {
+      this.peerConnection?.addTrack(track, this.localStream!);
+    });
+
+    return this.peerConnection;
+  }
+
+  // 创建offer
+  async createOffer() {
+    if (!this.peerConnection) {
+      this.createPeerConnection();
+    }
+
+    const offer = await this.peerConnection!.createOffer();
+    await this.peerConnection!.setLocalDescription(offer);
+    return offer;
+  }
+
+  // 处理answer
+  async handleAnswer(answer: RTCSessionDescriptionInit) {
+    await this.peerConnection?.setRemoteDescription(answer);
+  }
+
+  // 屏幕共享
+  async shareScreen() {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false,
+    });
+
+    const videoTrack = screenStream.getVideoTracks()[0];
+    const sender = this.peerConnection
+      ?.getSenders()
+      .find(s => s.track?.kind === 'video');
+
+    if (sender) {
+      sender.replaceTrack(videoTrack);
+    }
+
+    return screenStream;
+  }
+}
+```
+
+## 📱 推送通知服务
+
+### 1. OneSignal推送集成
+
+```typescript
+// services/notification/onesignal.ts
+import OneSignal from 'react-onesignal';
+
+export class OneSignalService {
+  async initialize(appId: string) {
+    await OneSignal.init({
+      appId,
+      allowLocalhostAsSecureOrigin: true,
+      notifyButton: {
+        enable: true,
+      },
+    });
+
+    // 自动提示用户订阅
+    OneSignal.showSlidedownPrompt();
+  }
+
+  // 发送标签
+  async setTags(tags: Record<string, string>) {
+    await OneSignal.sendTags(tags);
+  }
+
+  // 设置外部用户ID
+  async setExternalUserId(userId: string) {
+    await OneSignal.setExternalUserId(userId);
+  }
+
+  // 获取推送权限状态
+  async getPermissionStatus(): Promise<string> {
+    return OneSignal.getNotificationPermission();
+  }
+
+  // 订阅状态变化
+  onSubscriptionChange(callback: (isSubscribed: boolean) => void) {
+    OneSignal.on('subscriptionChange', callback);
+  }
+}
+```
+
+## 🎯 总结
+
+### 集成最佳实践
+1. **统一错误处理**: 所有服务使用一致的错误处理机制
+2. **配置管理**: 敏感信息使用环境变量
+3. **重试机制**: 网络请求添加重试逻辑
+4. **监控告警**: 集成失败时及时告警
+5. **版本管理**: 锁定第三方SDK版本
+6. **性能优化**: 按需加载SDK，避免首屏加载过重
+7. **降级方案**: 第三方服务不可用时的备选方案
+
+### 安全注意事项
+- 永远不要在前端暴露敏感密钥
+- 使用代理服务器处理敏感操作
+- 实施请求签名验证
+- 定期轮换API密钥
+- 使用HTTPS传输敏感数据
+- 实施访问频率限制
+
+### 测试策略
+- Mock第三方服务进行单元测试
+- 使用沙箱环境进行集成测试
+- 模拟服务故障测试降级方案
+- 监控第三方服务可用性
+
 ---
 
 **记住：良好的第三方服务集成是应用稳定性的保障！** 🔌
