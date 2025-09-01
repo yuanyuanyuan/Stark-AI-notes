@@ -1,0 +1,32 @@
+{
+  "name": "React Architecture Wizard",
+  "description": "智能对话式React项目架构生成向导",
+  "version": "1.0.0",
+  "mcp": {
+    "server": {
+      "command": "node",
+      "args": ["./dist/server.js"],
+      "cwd": "./react-component-architecture-design-spec/wizard/mcp-server",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    "capabilities": {
+      "conversation": true,
+      "codeGeneration": true,
+      "fileOperations": true,
+      "projectManagement": true
+    }
+  },
+  "integration": {
+    "autoStart": true,
+    "contextAware": true,
+    "fileWatcher": {
+      "patterns": [
+        "package.json",
+        "tsconfig.json",
+        "src/**/*.{ts,tsx,js,jsx}"
+      ]
+    }
+  }
+}

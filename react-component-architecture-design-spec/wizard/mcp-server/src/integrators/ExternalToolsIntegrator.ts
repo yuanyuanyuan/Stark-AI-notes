@@ -1178,7 +1178,7 @@ export class ExternalToolsIntegrator {
   /**
    * 获取缓存统计信息
    */
-  async getCacheStats() {
+  async getCacheStats(): Promise<any> {
     return await this.cacheManager.getStats();
   }
 
@@ -1202,14 +1202,14 @@ export class ExternalToolsIntegrator {
   /**
    * 获取性能统计信息
    */
-  getPerformanceStats() {
+  getPerformanceStats(): any {
     return this.performanceMonitor.getStats();
   }
 
   /**
    * 获取性能警告
    */
-  getPerformanceAlerts(severity?: 'low' | 'medium' | 'high' | 'critical') {
+  getPerformanceAlerts(severity?: 'low' | 'medium' | 'high' | 'critical'): any {
     return this.performanceMonitor.getAlerts(severity);
   }
 

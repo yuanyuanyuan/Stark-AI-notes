@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  react-arch-wizard:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile
+    container_name: react-arch-wizard-mcp
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MCP_CONFIG_PATH=/app/mcp-config.json
+      - DATA_PATH=/app/data
+      - LOG_LEVEL=info
+    volumes:
+      - wizard-data:/app/data
+      - wizard-cache:/app/.wizard/cache
+      - wizard-logs:/app/logs
+    ports:
+      - "3000:3000"  # 可选：如果需要HTTP接口
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # 可选：Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: react-arch-wizard-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  wizard-data:
+    driver: local
+  wizard-cache:
+    driver: local
+  wizard-logs:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge

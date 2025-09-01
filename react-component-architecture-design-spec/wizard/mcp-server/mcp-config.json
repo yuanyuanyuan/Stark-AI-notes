@@ -1,0 +1,252 @@
+{
+  "name": "react-arch-wizard-mcp",
+  "version": "1.0.0",
+  "description": "React架构向导MCP服务器 - 智能对话式React项目架构生成",
+  "author": "React Architecture Team",
+  "license": "MIT",
+  "mcp": {
+    "version": "0.5.0",
+    "server": {
+      "name": "react-arch-wizard",
+      "version": "1.0.0"
+    },
+    "capabilities": {
+      "tools": [
+        {
+          "name": "start_wizard",
+          "description": "启动React架构设计向导",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "projectName": {
+                "type": "string",
+                "description": "项目名称"
+              }
+            },
+            "required": ["projectName"]
+          }
+        },
+        {
+          "name": "process_answer",
+          "description": "处理用户回答并推进向导流程",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              },
+              "answer": {
+                "type": "string",
+                "description": "用户回答"
+              }
+            },
+            "required": ["sessionId", "answer"]
+          }
+        },
+        {
+          "name": "get_next_question",
+          "description": "获取向导的下一个问题",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              }
+            },
+            "required": ["sessionId"]
+          }
+        },
+        {
+          "name": "generate_architecture",
+          "description": "基于收集的需求生成React架构",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              },
+              "autoApprove": {
+                "type": "boolean",
+                "description": "是否自动批准生成的架构",
+                "default": false
+              }
+            },
+            "required": ["sessionId"]
+          }
+        },
+        {
+          "name": "export_project",
+          "description": "导出完整的React项目到指定目录",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              },
+              "outputPath": {
+                "type": "string",
+                "description": "输出目录路径"
+              },
+              "includeTests": {
+                "type": "boolean",
+                "description": "是否包含测试文件",
+                "default": true
+              },
+              "includeExamples": {
+                "type": "boolean",
+                "description": "是否包含示例文件",
+                "default": false
+              }
+            },
+            "required": ["sessionId", "outputPath"]
+          }
+        },
+        {
+          "name": "validate_architecture",
+          "description": "验证生成的架构是否符合React规范",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              }
+            },
+            "required": ["sessionId"]
+          }
+        },
+        {
+          "name": "list_sessions",
+          "description": "列出所有活动的向导会话",
+          "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          }
+        },
+        {
+          "name": "get_session_status",
+          "description": "获取指定会话的当前状态",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "会话ID"
+              }
+            },
+            "required": ["sessionId"]
+          }
+        }
+      ],
+      "resources": [
+        {
+          "uri": "wizard://sessions/*",
+          "name": "向导会话数据",
+          "description": "访问和管理向导会话的完整数据",
+          "mimeType": "application/json"
+        },
+        {
+          "uri": "wizard://architectures/*",
+          "name": "生成的架构",
+          "description": "访问已生成的React架构定义",
+          "mimeType": "application/json"
+        },
+        {
+          "uri": "wizard://templates/*",
+          "name": "代码模板",
+          "description": "访问可用的代码生成模板",
+          "mimeType": "text/plain"
+        },
+        {
+          "uri": "wizard://specifications",
+          "name": "架构规范",
+          "description": "访问React组件架构设计规范",
+          "mimeType": "application/yaml"
+        }
+      ]
+    },
+    "integration": {
+      "platforms": {
+        "claude-code": {
+          "supported": true,
+          "version": ">=1.0.0",
+          "features": [
+            "full-conversation",
+            "file-generation",
+            "project-export",
+            "specification-validation"
+          ]
+        },
+        "cursor": {
+          "supported": true,
+          "version": ">=0.30.0",
+          "features": [
+            "full-conversation",
+            "file-generation",
+            "project-export"
+          ]
+        },
+        "continue": {
+          "supported": true,
+          "version": ">=0.8.0",
+          "features": [
+            "basic-conversation",
+            "architecture-generation"
+          ]
+        },
+        "cli": {
+          "supported": true,
+          "features": [
+            "batch-mode",
+            "automation",
+            "ci-cd-integration"
+          ]
+        }
+      },
+      "external_tools": {
+        "context7": {
+          "description": "获取技术框架的最新文档和最佳实践",
+          "required": false,
+          "fallback": "使用内置知识库"
+        },
+        "exa": {
+          "description": "搜索技术趋势和解决方案",
+          "required": false,
+          "fallback": "使用内置推荐引擎"
+        },
+        "deepwiki": {
+          "description": "分析开源项目架构",
+          "required": false,
+          "fallback": "使用内置架构模式"
+        }
+      }
+    },
+    "performance": {
+      "caching": {
+        "enabled": true,
+        "ttl": 1800,
+        "maxMemoryEntries": 500
+      },
+      "monitoring": {
+        "enabled": true,
+        "metricsRetention": 7200
+      }
+    },
+    "security": {
+      "dataRetention": {
+        "sessions": 86400,
+        "architectures": 604800,
+        "cache": 3600
+      },
+      "sensitiveData": {
+        "logging": false,
+        "persistence": false
+      }
+    }
+  }
+}

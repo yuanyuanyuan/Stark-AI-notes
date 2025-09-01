@@ -567,7 +567,7 @@ class ReactArchWizardServer {
 }
 
 // 启动服务器
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   const server = new ReactArchWizardServer();
   server.start().catch((error) => {
     console.error('服务器启动失败:', error);

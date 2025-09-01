@@ -3,7 +3,7 @@
  * 确保向导生成的结果完全符合现有规范标准
  */
 
-import { WizardSession, Architecture, ToolResult } from '../types/index.js';
+import { WizardSession, ArchitectureSpec, ToolResult } from '../types/index.js';
 import fs from 'fs-extra';
 import path from 'path';
 import yaml from 'js-yaml';
@@ -80,7 +80,7 @@ export interface ArchitectureRule {
   id: string;
   description: string;
   severity: 'error' | 'warning' | 'info';
-  check: (architecture: Architecture) => boolean;
+  check: (architecture: ArchitectureSpec) => boolean;
   message: string;
 }
 
@@ -327,7 +327,7 @@ export class SpecificationIntegrator {
   /**
    * 验证架构是否符合规范
    */
-  async validateArchitecture(architecture: Architecture): Promise<ToolResult> {
+  async validateArchitecture(architecture: ArchitectureSpec): Promise<ToolResult> {
     try {
       const issues: any[] = [];
       const warnings: any[] = [];
@@ -386,7 +386,7 @@ export class SpecificationIntegrator {
   /**
    * 验证架构模式
    */
-  private validateArchitecturePattern(architecture: Architecture): { issues: any[]; warnings: any[] } {
+  private validateArchitecturePattern(architecture: ArchitectureSpec): { issues: any[]; warnings: any[] } {
     const issues: any[] = [];
     const warnings: any[] = [];
 
@@ -434,7 +434,7 @@ export class SpecificationIntegrator {
   /**
    * 验证分层结构
    */
-  private validateLayerStructure(architecture: Architecture): { issues: any[]; warnings: any[] } {
+  private validateLayerStructure(architecture: ArchitectureSpec): { issues: any[]; warnings: any[] } {
     const issues: any[] = [];
     const warnings: any[] = [];
 
@@ -480,7 +480,7 @@ export class SpecificationIntegrator {
   /**
    * 验证命名约定
    */
-  private validateNaming(architecture: Architecture): { issues: any[]; warnings: any[] } {
+  private validateNaming(architecture: ArchitectureSpec): { issues: any[]; warnings: any[] } {
     const issues: any[] = [];
     const warnings: any[] = [];
 
@@ -518,7 +518,7 @@ export class SpecificationIntegrator {
   /**
    * 验证依赖关系
    */
-  private validateDependencies(architecture: Architecture): { issues: any[]; warnings: any[] } {
+  private validateDependencies(architecture: ArchitectureSpec): { issues: any[]; warnings: any[] } {
     const issues: any[] = [];
     const warnings: any[] = [];
 
@@ -606,7 +606,7 @@ export class SpecificationIntegrator {
    * 生成合规建议
    */
   private generateComplianceSuggestions(
-    architecture: Architecture, 
+    architecture: ArchitectureSpec, 
     issues: any[], 
     warnings: any[]
   ): string[] {
@@ -631,7 +631,7 @@ export class SpecificationIntegrator {
    * 生成合规报告
    */
   private generateComplianceReport(
-    architecture: Architecture, 
+    architecture: ArchitectureSpec, 
     issues: any[], 
     warnings: any[]
   ): any {
@@ -823,7 +823,7 @@ export class SpecificationIntegrator {
     }
     
     // 默认分配到business层
-    return availableLayers.includes('business') ? 'business' : availableLayers[0];
+    return availableLayers.includes('business') ? 'business' : (availableLayers[0] || 'business');
   }
 
   /**
