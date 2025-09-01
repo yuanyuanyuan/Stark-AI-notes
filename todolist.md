@@ -17,8 +17,6 @@
 模拟一个有初级技术基础的用户来使用 'react-component-architecture-design-spec'' 和 'react-component-design-spec'  来完成一个标准sass网站项目开发,记录并总结使用过程的经验和建议和意见.
 </task3>
 
-<task4>
-模拟一个熟练技术的用户来使用 'react-component-architecture-design-spec'' 和 'react-component-design-spec'  来完成一个标准sass网站项目开发,记录并总结使用过程的经验和建议和意见.
-</task4>
+
 
 
