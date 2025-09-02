@@ -10,7 +10,11 @@
       "mcp__spec-workflow__spec-status",
       "mcp__spec-workflow__manage-tasks",
       "mcp__spec-workflow__get-steering-context",
-      "mcp__spec-workflow__delete-approval"
+      "mcp__spec-workflow__delete-approval",
+      "mcp__react-arch-wizard__start_wizard",
+      "mcp__react-arch-wizard__answer_question",
+      "mcp__react-arch-wizard__generate_architecture",
+      "mcp__react-arch-wizard__export_project"
     ],
     "deny": [],
     "ask": []

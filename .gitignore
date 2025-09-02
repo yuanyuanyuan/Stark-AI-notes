@@ -5,3 +5,6 @@ collection-box/*
 node_modules/*
 node_modules 
 .wizard
+.spec-workflow
+.serena
+.claude
